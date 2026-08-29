@@ -6,3 +6,222 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum PaymentMethod {
+  card
+  upi
+}
+
+enum PaymentStatus {
+  failed
+  in_progress
+  recovered
+  abandoned
+  escalated
+}
+
+enum RootCause {
+  INSUFFICIENT_FUNDS
+  AUTH_FAILED
+  CUSTOMER_ABANDONED
+  ISSUER_DOWNTIME
+  GATEWAY_DOWNTIME
+  INSTRUMENT_INVALID
+  RISK_DECLINE
+  OPAQUE_BANK_DECLINE
+  TECHNICAL_UNRESOLVED
+  UNKNOWN
+}
+
+enum ClassifierKind {
+  deterministic
+  llm
+}
+
+enum ActionType {
+  retry_charge
+  issue_payment_link
+  send_nudge
+  escalate
+}
+
+enum ActionStatus {
+  proposed
+  vetoed
+  scheduled
+  executing
+  succeeded
+  failed
+}
+
+enum AuditEvent {
+  ingested
+  diagnosed
+  action_proposed
+  action_vetoed
+  action_executed
+  outcome_recorded
+  escalated
+}
+
+enum EvalSplit {
+  train
+  holdout
+}
+
+enum EvalArm {
+  baseline
+  agent
+}
+
+model Customer {
+  id         String  @id @default(cuid())
+  externalId String  @unique
+  timezone   String  @default("Asia/Kolkata")
+  optedOut   Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  paymentAttempts PaymentAttempt[]
+
+  @@map("customers")
+}
+
+model PaymentAttempt {
+  id                String  @id @default(cuid())
+  razorpayPaymentId String  @unique
+  razorpayOrderId   String?
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  amountPaise Int
+  currency    String        @default("INR")
+  method      PaymentMethod
+  status      PaymentStatus @default(failed)
+
+  errorCode        String?
+  errorDescription String?
+  errorSource      String?
+  errorStep        String?
+  errorReason      String?
+
+  failedAt DateTime
+
+  attemptNumber   Int              @default(1)
+  parentAttemptId String?
+  parentAttempt   PaymentAttempt?  @relation("RetryChain", fields: [parentAttemptId], references: [id], onDelete: SetNull)
+  retries         PaymentAttempt[] @relation("RetryChain")
+
+  isSynthetic        Boolean    @default(false)
+  syntheticTrueCause RootCause?
+  recoverableUnder   Json?
+  evalSplit          EvalSplit?
+  datasetVersion     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  diagnosis Diagnosis?
+  actions   Action[]
+  auditLogs AuditLog[]
+
+  @@index([status, failedAt])
+  @@index([evalSplit, isSynthetic])
+  @@index([customerId])
+  @@index([parentAttemptId])
+  @@map("payment_attempts")
+}
+
+model Diagnosis {
+  id String @id @default(cuid())
+
+  paymentAttemptId String         @unique
+  paymentAttempt   PaymentAttempt @relation(fields: [paymentAttemptId], references: [id], onDelete: Cascade)
+
+  rootCause  RootCause
+  confidence Float
+  classifier ClassifierKind
+  evidence   String[]
+
+  llmModel       String?
+  llmRawResponse String?
+
+  createdAt DateTime @default(now())
+
+  actions Action[]
+
+  @@index([rootCause])
+  @@map("diagnoses")
+}
+
+model Action {
+  id String @id @default(cuid())
+
+  paymentAttemptId String
+  paymentAttempt   PaymentAttempt @relation(fields: [paymentAttemptId], references: [id], onDelete: Cascade)
+
+  diagnosisId String?
+  diagnosis   Diagnosis? @relation(fields: [diagnosisId], references: [id], onDelete: SetNull)
+
+  type   ActionType
+  status ActionStatus @default(proposed)
+
+  scheduledFor DateTime?
+  executedAt   DateTime?
+
+  idempotencyKey String @unique
+
+  vetoedBy   String?
+  vetoReason String?
+
+  payload Json
+  outcome Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  auditLogs AuditLog[]
+
+  @@index([status, scheduledFor])
+  @@index([paymentAttemptId])
+  @@map("actions")
+}
+
+model AuditLog {
+  id String @id @default(cuid())
+
+  paymentAttemptId String
+  paymentAttempt   PaymentAttempt @relation(fields: [paymentAttemptId], references: [id], onDelete: Cascade)
+
+  actionId String?
+  action   Action? @relation(fields: [actionId], references: [id], onDelete: SetNull)
+
+  event AuditEvent
+
+  inputSnapshot Json
+  ruleFired     String?
+  reasoning     String?
+
+  occurredAt  DateTime
+  wallClockAt DateTime @default(now())
+
+  @@index([paymentAttemptId, occurredAt])
+  @@index([actionId])
+  @@map("audit_logs")
+}
+
+model EvalRun {
+  id             String    @id @default(cuid())
+  startedAt      DateTime  @default(now())
+  finishedAt     DateTime?
+  datasetVersion String
+  splitName      String
+  seed           Int?
+  arm            EvalArm
+  metrics        Json
+  notes          String?
+
+  @@index([datasetVersion, arm])
+  @@map("eval_runs")
+}
