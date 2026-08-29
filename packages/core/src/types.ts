@@ -112,6 +112,8 @@ export interface AttemptHistory {
   lastChargeAttemptAt: Date | null
   contactsForPayment: number
   contactsForCustomerLast7d: number
+  completedSteps: number
+  lastActionAt: Date | null
   usedIdempotencyKeys: ReadonlySet<string>
 }
 

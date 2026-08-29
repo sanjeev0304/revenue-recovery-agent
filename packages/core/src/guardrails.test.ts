@@ -43,6 +43,8 @@ function ctx(overrides: {
       lastChargeAttemptAt: overrides.lastChargeAttemptAt ?? null,
       contactsForPayment: overrides.contactsForPayment ?? 0,
       contactsForCustomerLast7d: overrides.contactsForCustomerLast7d ?? 0,
+      completedSteps: 0,
+      lastActionAt: overrides.lastChargeAttemptAt ?? null,
       usedIdempotencyKeys: new Set(overrides.usedKeys ?? []),
     },
     rootCause,
