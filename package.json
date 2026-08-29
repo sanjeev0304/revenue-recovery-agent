@@ -5,7 +5,8 @@
   "type": "module",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "scripts/*"
   ],
   "engines": {
     "node": ">=20"
@@ -19,7 +20,8 @@
     "test:watch": "vitest",
     "db:push": "npm run db:push -w @revenue/db",
     "db:studio": "npm run db:studio -w @revenue/db",
-    "db:generate": "npm run db:generate -w @revenue/db"
+    "db:generate": "npm run db:generate -w @revenue/db",
+    "seed": "dotenv -e .env -- npm run seed -w @revenue/seed"
   },
   "devDependencies": {
     "dotenv-cli": "^11.0.0",
