@@ -130,6 +130,20 @@ describe('TRANSACTION_LIMIT_EXCEEDED', () => {
     const d = decide(input({ payment: tle, completedSteps: 1, chargeAttempts: 1 }))
     expect(d.proposedAction?.type).toBe('send_nudge')
   })
+
+  it('nudges 12h after the failed retry', () => {
+    const retryAt = new Date('2026-09-11T02:00:00Z')
+    const d = decide(
+      input({
+        payment: tle,
+        completedSteps: 1,
+        chargeAttempts: 1,
+        lastActionAt: retryAt,
+        now: retryAt,
+      }),
+    )
+    expect(d.scheduledFor!.getTime() - retryAt.getTime()).toBe(12 * HOUR_MS)
+  })
 })
 
 describe('AUTH_FAILED', () => {
@@ -152,10 +166,21 @@ describe('AUTH_FAILED', () => {
 })
 
 describe('INSTRUMENT_INVALID', () => {
+  const dead = facts({ reason: 'card_expired', method: 'card' })
+
   it('issues a link rather than retrying a card that cannot work', () => {
-    const d = decide(input({ payment: facts({ reason: 'card_expired', method: 'card' }) }))
+    const d = decide(input({ payment: dead }))
     expect(d.rootCause).toBe('INSTRUMENT_INVALID')
     expect(d.proposedAction?.type).toBe('issue_payment_link')
+  })
+
+  it('waits 1h before nudging, not minutes', () => {
+    const linkAt = new Date('2026-09-10T06:30:00Z')
+    const d = decide(
+      input({ payment: dead, completedSteps: 1, lastActionAt: linkAt, now: linkAt }),
+    )
+    expect(d.proposedAction?.type).toBe('send_nudge')
+    expect(d.scheduledFor!.getTime() - linkAt.getTime()).toBe(HOUR_MS)
   })
 })
 

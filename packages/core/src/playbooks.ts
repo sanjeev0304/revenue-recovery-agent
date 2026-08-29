@@ -145,7 +145,7 @@ export const PLAYBOOKS: Readonly<Record<RootCause, Playbook>> = {
       { action: 'issue_payment_link', delayMs: 0 },
       {
         action: 'send_nudge',
-        delayMs: 5 * MINUTE_MS,
+        delayMs: HOUR_MS,
         includeLink: true,
         copyHint: 'Ask for an updated payment method. Never suggest retrying the same one.',
       },

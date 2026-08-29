@@ -70,12 +70,17 @@ One playbook per root cause, declared as data.
 - No retry before the limit resets. Retry once at the next local-midnight boundary
   plus a small offset, so the attempt lands after the reset rather than on it.
 - Max 1 retry. If it fails, one nudge suggesting a different instrument, then escalate.
+- Nudge at +12h after the failed retry: the retry already waited out the limit reset, so
+  the customer has been waiting a day and 12h lands the message in the same waking day
+  without arriving on the heels of the retry.
 - No same-day retry under any circumstance. A second same-day attempt cannot succeed.
 
 ### AUTH_FAILED
 - Never retry silently. The customer must be present to complete authentication.
 - Issue a fresh payment link immediately.
-- One nudge. Copy should suggest UPI as an alternative to card plus OTP.
+- One nudge at +2h after the link. Copy should suggest UPI as an alternative to card plus
+  OTP. The customer just failed an OTP and knows the payment did not go through, so a
+  reminder inside the quarter hour reads as nagging rather than as help.
 - Max 1 link, max 1 nudge, then escalate.
 
 ### CUSTOMER_ABANDONED
@@ -99,7 +104,9 @@ One playbook per root cause, declared as data.
 
 ### INSTRUMENT_INVALID
 - Never retry the charge. The instrument cannot work.
-- One nudge asking for an updated payment method, with a fresh link.
+- One nudge at +1h after the link, asking for an updated payment method. Five minutes
+  after a rejected card reads as automated; an hour reads as a merchant noticing. Shorter
+  than AUTH_FAILED because nothing resolves here without the customer acting.
 - Escalate after the nudge regardless of outcome.
 
 ### RISK_DECLINE
