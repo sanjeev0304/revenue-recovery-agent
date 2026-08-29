@@ -1,14 +1,12 @@
-import Fastify from 'fastify'
 import { env } from './env.js'
+import { buildServer } from './server.js'
+import { PrismaIngestRepo } from './ingest/prismaRepo.js'
 
-const app = Fastify({
-  logger: {
-    level: env.NODE_ENV === 'production' ? 'info' : 'debug',
-    redact: ['req.headers.authorization', 'req.headers["x-razorpay-signature"]'],
-  },
+const app = await buildServer({
+  repo: new PrismaIngestRepo(),
+  webhookSecret: env.RAZORPAY_WEBHOOK_SECRET,
+  logLevel: env.NODE_ENV === 'production' ? 'info' : 'debug',
 })
-
-app.get('/health', async () => ({ status: 'ok' }))
 
 const shutdown = async (signal: string) => {
   app.log.info({ signal }, 'shutting down')

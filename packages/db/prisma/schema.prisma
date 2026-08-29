@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum PaymentMethod {
@@ -68,6 +69,15 @@ enum AuditEvent {
 enum EvalSplit {
   train
   holdout
+}
+
+enum WebhookStatus {
+  received
+  processed
+  unmatched
+  ignored
+  invalid
+  failed
 }
 
 enum EvalArm {
@@ -212,6 +222,26 @@ model AuditLog {
   @@index([paymentAttemptId, occurredAt])
   @@index([actionId])
   @@map("audit_logs")
+}
+
+model WebhookEvent {
+  id      String @id @default(cuid())
+  eventId String @unique
+
+  event             String
+  signatureVerified Boolean
+  rawBody           String
+  payload           Json?
+
+  status           WebhookStatus @default(received)
+  paymentAttemptId String?
+  note             String?
+
+  receivedAt  DateTime  @default(now())
+  processedAt DateTime?
+
+  @@index([status, receivedAt])
+  @@map("webhook_events")
 }
 
 model EvalRun {

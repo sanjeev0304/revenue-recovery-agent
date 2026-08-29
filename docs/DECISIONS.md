@@ -31,6 +31,51 @@ they are: a payment failing alongside thirty others inside twenty minutes with a
 gateway reason is **structurally identifiable, not inferred**. Downtime-class accuracy
 measures whether the model can read an obvious signal. It should not carry the headline.
 
+## Webhook replay defence is dedupe only
+
+Razorpay's webhook signature covers the request body and nothing else. Unlike Stripe, there
+is no timestamp inside the signed material, so a captured payload stays valid forever and
+can be replayed indefinitely by anyone who obtains it.
+
+The defence is deduplication on `x-razorpay-event-id`, enforced by a unique constraint on
+`webhook_events.eventId`. A replayed delivery is stored once, acknowledged with 200, and
+never reprocessed. When the header is absent the event id falls back to a SHA-256 of the
+raw body, so dedupe still has a key.
+
+A timestamp window on the payload's `created_at` was considered and rejected: `created_at`
+is not covered by the signature, so an attacker replaying a payload can edit it freely,
+and a legitimate Razorpay retry storm after an outage would be dropped by the window. It
+would add the appearance of replay protection without the substance.
+
+This is a limitation of the provider's signature scheme, not something the endpoint can
+fix. It is recorded so nobody assumes replay protection exists that does not.
+
+## The webhook never creates payments
+
+An event for a payment this system does not recognise is persisted, acknowledged with 200,
+and marked `unmatched`. It is not an error and must never trigger a Razorpay retry: test
+mode delivers events for payments other integrations created, and an endpoint that threw on
+them would fail during the demo.
+
+The consequence is that `payment.failed` does **not** create a new `PaymentAttempt`. In a
+production system it would — that is how failed payments enter. Here payments enter only
+through the batch importer, because creating records from arbitrary test-mode traffic would
+put rows with no ground-truth labels into the dataset the eval measures.
+
+## Server-initiated retry is approximated
+
+`RazorpayAdapter.attemptCharge` creates an Order through the live test-mode API and returns
+its id as the provider ref. It does not re-present the original instrument.
+
+A true server-initiated retry needs a saved token or an active mandate, neither of which
+exists for a synthetic dataset and neither of which can be created without a real customer
+completing an authorisation. The Order call is the closest test-mode analogue: it is a real
+authenticated API call whose outcome arrives by webhook on the same path a genuine retry
+would use.
+
+The simulated arm is therefore the one that measures recovery. The Razorpay arm demonstrates
+that the ingest path is real, not that the retries are.
+
 ## RISK_DECLINE is never masked
 
 Opaque masking applies to every cause except `RISK_DECLINE`. Masking it would put risk
