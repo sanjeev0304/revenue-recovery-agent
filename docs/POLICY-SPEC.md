@@ -64,6 +64,16 @@ One playbook per root cause, declared as data.
 - If the next salary-credit window (1st or last working day of month) falls within 5 days,
   schedule the second attempt for that window instead.
 - Max 2 retries. Then one nudge with a payment link. Then stop.
+- Nudge at +24h after the final retry, roughly four days after the original failure, which
+  spans most short-term cash gaps. This timing is paced on a different axis from the other
+  nudges: those are spaced so the message does not read as aggressive, this one is spaced
+  to when the money is likely to be there. Asking someone to pay while their balance is
+  still short only produces another visible failure.
+- Open question, not yet implemented: the salary-window adjustment applied to the second
+  retry should probably apply to the nudge too. Today the nudge is a flat +24h after the
+  last action, so it inherits the window only when the retry itself was shifted onto one.
+  A payment that took the +48h fallback can still land its nudge just before a salary
+  credit that a re-anchored nudge would have waited for.
 
 ### TRANSACTION_LIMIT_EXCEEDED
 - The instrument works and the funds exist. Only the daily limit was hit.

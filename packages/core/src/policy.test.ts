@@ -92,6 +92,29 @@ describe('INSUFFICIENT_FUNDS', () => {
     expect(d.scheduledFor!.getTime() - lastAction.getTime()).toBe(48 * HOUR_MS)
   })
 
+  it('lands the nudge four days after failure when walked step by step', () => {
+    const first = decide(input())
+    expect(first.proposedAction?.type).toBe('retry_charge')
+    const t1 = first.scheduledFor!
+
+    const second = decide(
+      input({ completedSteps: 1, chargeAttempts: 1, lastActionAt: t1, lastChargeAttemptAt: t1, now: t1 }),
+    )
+    expect(second.proposedAction?.type).toBe('retry_charge')
+    const t2 = second.scheduledFor!
+
+    const third = decide(
+      input({ completedSteps: 2, chargeAttempts: 2, lastActionAt: t2, lastChargeAttemptAt: t2, now: t2 }),
+    )
+    expect(third.proposedAction?.type).toBe('send_nudge')
+    expect(third.guardrailVerdict.allowed).toBe(true)
+
+    expect(third.scheduledFor!.getTime() - t2.getTime()).toBe(24 * HOUR_MS)
+    expect((t1.getTime() - FAILED_AT.getTime()) / DAY_MS).toBe(1)
+    expect((t2.getTime() - FAILED_AT.getTime()) / DAY_MS).toBe(3)
+    expect((third.scheduledFor!.getTime() - FAILED_AT.getTime()) / DAY_MS).toBe(4)
+  })
+
   it('stops rather than escalating once the playbook is exhausted', () => {
     const d = decide(input({ completedSteps: 3, chargeAttempts: 2, contactsForPayment: 1 }))
     expect(d.proposedAction).toBeNull()
