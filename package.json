@@ -1,0 +1,29 @@
+{
+  "name": "revenue-recovery-agent",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev:web": "npm run dev -w @revenue/web",
+    "dev:worker": "npm run dev -w @revenue/worker",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:push": "npm run db:push -w @revenue/db",
+    "db:studio": "npm run db:studio -w @revenue/db",
+    "db:generate": "npm run db:generate -w @revenue/db"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^11.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
+  }
+}
