@@ -65,6 +65,30 @@ A `RISK_DECLINE` record recovers under nothing.
 Amounts are drawn from a long-tailed distribution, not uniform, because the money-recovered
 metric is dominated by the tail and a uniform distribution would flatter the result.
 
+### Opaque masking
+
+Roughly 15% of records whose true cause is NOT `RISK_DECLINE` and NOT already
+`OPAQUE_BANK_DECLINE` carry an opaque `reason` (`payment_failed`, `payment_declined`,
+`card_declined`) in place of the reason their cause would normally produce. Their
+`syntheticTrueCause` remains the real cause.
+
+This exists because without it the dataset is circular. If opaque reasons appear only on
+records whose true cause is already `OPAQUE_BANK_DECLINE`, the deterministic lookup scores
+100% on that class by construction, and the separately-reported OPAQUE_BANK_DECLINE
+accuracy measures nothing. Masking is also what banks actually do: a generic decline is
+frequently all that is returned for a specific underlying problem.
+
+`RISK_DECLINE` is deliberately never masked. Masking it would mean the dataset contains
+risk declines that cannot be deterministically identified, and the agent would retry
+payments it must never retry. The safety-critical class stays fully detectable so its
+recall is a real measurement of the guardrail rather than of the dataset.
+
+The consequence for the LLM hit rate is direct and should be stated in the README: the
+genuinely-opaque class is 16% of the dataset, masking adds roughly 12 points on top, so
+the hit rate lands near 28-30%. This is far above the PRD's 15% target. The target was
+written before the circularity was noticed and is not achievable alongside a meaningful
+OPAQUE_BANK_DECLINE metric. Report the real number and this reason.
+
 ## Arms
 
 **Baseline** — as defined in `docs/POLICY-SPEC.md`. Fixed retries at +1h, +6h, +24h, max 3,
