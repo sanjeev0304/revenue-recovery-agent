@@ -87,7 +87,7 @@ export const PLAYBOOKS: Readonly<Record<RootCause, Playbook>> = {
       { action: 'issue_payment_link', delayMs: 0 },
       {
         action: 'send_nudge',
-        delayMs: 15 * MINUTE_MS,
+        delayMs: 2 * HOUR_MS,
         includeLink: true,
         copyHint: 'Suggest UPI as an alternative to card plus OTP.',
       },

@@ -137,6 +137,11 @@ reason and never executed. Pure functions, tested independently.
 | `IDEMPOTENCY` | Every executed action carries a deterministic key. Duplicate key is vetoed |
 | `AMOUNT_CEILING` | Veto automatic retry above a configured amount, escalate instead. Default 50000000 paise |
 
+`CONTACT_CAP` counts `send_nudge` actions only. `issue_payment_link` is not a contact:
+it mints a URL, it does not message anybody. Counting it would put the
+`CUSTOMER_ABANDONED` playbook — link, nudge at +2h, final nudge — at three contacts and
+in breach of its own two-contact cap on the exact steps this document prescribes.
+
 Guardrails evaluate in the order listed. First veto wins and short-circuits.
 
 ## Decision output shape

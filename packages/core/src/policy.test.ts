@@ -132,6 +132,25 @@ describe('TRANSACTION_LIMIT_EXCEEDED', () => {
   })
 })
 
+describe('AUTH_FAILED', () => {
+  const auth = facts({ reason: 'authentication_failed' })
+
+  it('issues a link first, without any charge retry', () => {
+    const d = decide(input({ payment: auth }))
+    expect(d.rootCause).toBe('AUTH_FAILED')
+    expect(d.proposedAction?.type).toBe('issue_payment_link')
+  })
+
+  it('waits 2h before nudging, not minutes', () => {
+    const linkAt = new Date('2026-09-10T06:30:00Z')
+    const d = decide(
+      input({ payment: auth, completedSteps: 1, lastActionAt: linkAt, now: linkAt }),
+    )
+    expect(d.proposedAction?.type).toBe('send_nudge')
+    expect(d.scheduledFor!.getTime() - linkAt.getTime()).toBe(2 * HOUR_MS)
+  })
+})
+
 describe('INSTRUMENT_INVALID', () => {
   it('issues a link rather than retrying a card that cannot work', () => {
     const d = decide(input({ payment: facts({ reason: 'card_expired', method: 'card' }) }))
