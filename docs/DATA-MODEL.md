@@ -29,6 +29,12 @@ classify on it. Store all five fields verbatim; the audit trail needs the raw er
 - `attemptNumber` Int, `parentAttemptId` nullable self-relation for retry chains
 - `isSynthetic` boolean
 - `syntheticTrueCause` nullable — ground truth label, ONLY populated for synthetic records
+- `recoverableUnder` nullable Json — ground truth recoverability, ONLY populated for
+  synthetic records. Maps each intervention type to whether it would have succeeded and
+  after what delay:
+  `{ retry_charge: { succeeds: bool, afterMs: int|null }, issue_payment_link: {...}, send_nudge: {...} }`
+  Derived from the cause, never assigned randomly. The money-recovered metric is computed
+  against this field, so without it the eval cannot run.
 - `evalSplit` nullable enum: train, holdout
 
 The `syntheticTrueCause` and `evalSplit` fields exist so the eval harness can score

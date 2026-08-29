@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 export const rootCauseSchema = z.enum([
   'INSUFFICIENT_FUNDS',
+  'TRANSACTION_LIMIT_EXCEEDED',
   'AUTH_FAILED',
   'CUSTOMER_ABANDONED',
   'ISSUER_DOWNTIME',

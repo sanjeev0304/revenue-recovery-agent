@@ -27,6 +27,7 @@ reason appears under different methods.
 | Root cause | Razorpay `reason` values | Recoverable | Retry the charge? |
 |---|---|---|---|
 | `INSUFFICIENT_FUNDS` | `insufficient_funds` | Yes, with timing | Yes, delayed only |
+| `TRANSACTION_LIMIT_EXCEEDED` | `transaction_limit_exceeded` | Yes, on daily reset | Yes, next day only |
 | `AUTH_FAILED` | `authentication_failed`, `incorrect_cvv` | Yes | No, needs customer present |
 | `CUSTOMER_ABANDONED` | `payment_cancelled`, `payment_timed_out`, `payment_collect_request_expired` | Yes | No, needs customer present |
 | `ISSUER_DOWNTIME` | `bank_technical_error` | Yes | Yes |
@@ -43,8 +44,9 @@ Notes that matter:
   exceeded the payment window, typically 10 minutes. Treat it as abandonment.
 - `bank_technical_error` is the customer's bank being down. `gateway_technical_error` is
   Razorpay's partner bank being down. Different recovery windows, so keep them separate.
-- `transaction_limit_exceeded` maps to `INSUFFICIENT_FUNDS` in effect but recovers on a
-  daily reset rather than a funds credit. Give it its own retry timing: next day, once.
+- `transaction_limit_exceeded` is its own root cause. It resembles `INSUFFICIENT_FUNDS`
+  but recovers on a daily limit reset rather than a funds credit, so it gets its own
+  retry timing: next day, once. Kept separate because the recovery trigger differs.
 - `OPAQUE_BANK_DECLINE` is the interesting class. Razorpay's own docs say they often do
   not have the underlying reason because banks do not share it. This is where the LLM
   earns its place: infer the likely cause from amount, method, time of day, and the
@@ -62,6 +64,13 @@ One playbook per root cause, declared as data.
 - If the next salary-credit window (1st or last working day of month) falls within 5 days,
   schedule the second attempt for that window instead.
 - Max 2 retries. Then one nudge with a payment link. Then stop.
+
+### TRANSACTION_LIMIT_EXCEEDED
+- The instrument works and the funds exist. Only the daily limit was hit.
+- No retry before the limit resets. Retry once at the next local-midnight boundary
+  plus a small offset, so the attempt lands after the reset rather than on it.
+- Max 1 retry. If it fails, one nudge suggesting a different instrument, then escalate.
+- No same-day retry under any circumstance. A second same-day attempt cannot succeed.
 
 ### AUTH_FAILED
 - Never retry silently. The customer must be present to complete authentication.

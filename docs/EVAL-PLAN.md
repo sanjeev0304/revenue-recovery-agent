@@ -9,7 +9,7 @@ README and the demo video comes from here.
 
 Split: 1100 `train`, 400 `holdout`.
 
-The holdout is 400 rather than 200 because the taxonomy has ten classes and the rare ones
+The holdout is 400 rather than 200 because the taxonomy has eleven classes and the rare ones
 matter most. At 200 records, `RISK_DECLINE` at 4% yields 8 samples — too few to report a
 recall figure honestly. At 400 it yields 16, which is thin but defensible. Generating more
 records costs nothing; under-powering the safety-critical class costs credibility.
@@ -24,7 +24,8 @@ its assumptions inline.
 
 | Root cause | Share |
 |---|---|
-| INSUFFICIENT_FUNDS | 22% |
+| INSUFFICIENT_FUNDS | 19% |
+| TRANSACTION_LIMIT_EXCEEDED | 3% |
 | CUSTOMER_ABANDONED | 20% |
 | OPAQUE_BANK_DECLINE | 16% |
 | AUTH_FAILED | 13% |
@@ -122,6 +123,14 @@ random seed.
 
 A meaningful lift in recovery rate with a large reduction in wasted attempts, near-perfect
 RISK_DECLINE recall, zero quiet-hours violations, and an LLM hit rate under 15%.
+
+The LLM hit rate target is expected to be missed and that is a known, accepted tension,
+not a bug. `OPAQUE_BANK_DECLINE` alone is 16% of the dataset, and it is the one class
+where the LLM does inference rather than confirming a lookup. Routing it to the LLM puts
+the floor at 16% before a single `UNKNOWN` record. The alternative — deterministic
+labelling of opaque declines — would drive the hit rate to roughly zero while making the
+separately-reported `OPAQUE_BANK_DECLINE` accuracy measure nothing at all. We keep the
+LLM on that class, and report the hit rate as over target with this reason attached.
 
 If the recovery lift is modest but the wasted-attempt reduction is large, lead with the
 efficiency story rather than inflating the recovery number. That is a real result and an
