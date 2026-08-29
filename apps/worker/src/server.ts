@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance } from 'fastify'
+import type { Clock } from './clock.js'
 import type { IngestRepo } from './ingest/repo.js'
 import { registerRawBodyParser, registerWebhookRoutes } from './ingest/route.js'
 
@@ -6,6 +7,7 @@ export interface BuildServerOptions {
   repo: IngestRepo
   webhookSecret: string
   logLevel?: string
+  clock?: Clock
 }
 
 export async function buildServer(options: BuildServerOptions): Promise<FastifyInstance> {
@@ -22,7 +24,10 @@ export async function buildServer(options: BuildServerOptions): Promise<FastifyI
 
   registerRawBodyParser(app)
 
-  app.get('/health', async () => ({ status: 'ok' }))
+  app.get('/health', async () => ({
+    status: 'ok',
+    clock: options.clock?.describe() ?? 'real time',
+  }))
 
   await registerWebhookRoutes(app, { repo: options.repo, secret: options.webhookSecret })
 

@@ -62,6 +62,36 @@ production system it would — that is how failed payments enter. Here payments 
 through the batch importer, because creating records from arbitrary test-mode traffic would
 put rows with no ground-truth labels into the dataset the eval measures.
 
+## Razorpay Subscriptions were investigated and rejected
+
+Subscriptions looked like the one path to a genuinely closed loop in test mode: our agent
+decides to retry, Razorpay charges a live mandate, Razorpay reports the outcome back by
+webhook. It was examined and does not work, for two independent reasons.
+
+**Activation requires a Checkout browser transaction.** A subscription is created in the
+`created` state and becomes `active` only after an authorisation payment made through
+Razorpay Checkout with `subscription_id` passed in the options. The docs give no API-only
+route to activation. In test mode the authorisation uses a Razorpay test card, so no real
+card and no real money are involved, but it remains a browser interaction rather than a
+server call.
+
+**The charge trigger is Dashboard-only.** This is the blocker that actually matters. Both
+the test-mode "Charge this now" control and the `pending`-state "Attempt Charge" flow are
+documented purely as Dashboard actions. The public Subscriptions API surface covers plans,
+create, fetch, update, cancel, pause, resume, scheduled changes and offers — there is no
+charge-now endpoint. So the agent cannot initiate the retry; a human clicking a button
+would be, which is exactly the thing we would need to automate.
+
+Razorpay's own scheduler does auto-charge active subscriptions and fires
+`subscription.charged` and `subscription.pending` with no human involvement. That closes a
+loop, but Razorpay's scheduler is the thing deciding to retry, not our policy engine, so it
+demonstrates nothing about the agent.
+
+**Scope of the check:** public documentation only. An undocumented or partner-only
+charge-now endpoint is not ruled out, and confirming that would mean asking Razorpay
+support. This is recorded so a reviewer wondering why subscriptions were not used for a
+real mandate retry finds the reasoning rather than assuming the API went unexamined.
+
 ## Server-initiated retry is approximated
 
 `RazorpayAdapter.attemptCharge` creates an Order through the live test-mode API and returns

@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify'
 import { buildServer } from '../server.js'
 import { MemoryIngestRepo } from './memoryRepo.js'
 import { signPayload } from './signature.js'
+import { WarpedClock } from '../clock.js'
 
 const SECRET = 'whsec_route_test'
 
@@ -191,6 +192,19 @@ describe('POST /webhooks/razorpay', () => {
 
   it('leaves the health route on the normal JSON parser', async () => {
     const res = await app.inject({ method: 'GET', url: '/health' })
-    expect(res.json()).toEqual({ status: 'ok' })
+    expect(res.json()).toEqual({ status: 'ok', clock: 'real time' })
+  })
+
+  it('announces a warped clock on the health route', async () => {
+    const warped = await buildServer({
+      repo,
+      webhookSecret: SECRET,
+      logLevel: 'silent',
+      clock: new WarpedClock(new Date('2026-07-14T00:00:00Z'), 3600, () => 0),
+    })
+    await warped.ready()
+    const res = await warped.inject({ method: 'GET', url: '/health' })
+    expect(res.json().clock).toBe('warped x3600 from 2026-07-14T00:00:00.000Z')
+    await warped.close()
   })
 })

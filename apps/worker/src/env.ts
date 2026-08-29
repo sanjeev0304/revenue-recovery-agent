@@ -11,7 +11,20 @@ const envSchema = z.object({
   RAZORPAY_KEY_SECRET: z.string().min(1),
   RAZORPAY_WEBHOOK_SECRET: z.string().min(1),
   GEMINI_API_KEY: z.string().min(1),
+  WARP_ORIGIN: z.coerce.date().optional(),
+  WARP_FACTOR: z.coerce.number().positive().finite().optional(),
 })
+  .superRefine((value, ctx) => {
+    const hasOrigin = value.WARP_ORIGIN !== undefined
+    const hasFactor = value.WARP_FACTOR !== undefined
+    if (hasOrigin === hasFactor) return
+    ctx.addIssue({
+      code: 'custom',
+      path: [hasOrigin ? 'WARP_FACTOR' : 'WARP_ORIGIN'],
+      message:
+        'WARP_ORIGIN and WARP_FACTOR must be set together. A warped run must declare both, so the simulated timeline is an explicit input rather than something captured at boot.',
+    })
+  })
 
 const parsed = envSchema.safeParse(process.env)
 
