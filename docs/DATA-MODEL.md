@@ -29,6 +29,14 @@ classify on it. Store all five fields verbatim; the audit trail needs the raw er
 - `attemptNumber` Int, `parentAttemptId` nullable self-relation for retry chains
 - `isSynthetic` boolean
 - `syntheticTrueCause` nullable — ground truth label, ONLY populated for synthetic records
+- `syntheticIncidentId` nullable — ground truth downtime-incident membership. Set only on
+  records the generator emitted as part of an issuer or gateway outage burst. The eval
+  needs it to split opaque-subset accuracy into masked-in-burst and masked-scattered;
+  re-deriving burst membership from a ratio threshold would measure the threshold rather
+  than the truth.
+- `syntheticSubtype` nullable — ground truth sub-classification where a cause splits
+  internally. Currently only `TRANSACTION_LIMIT_EXCEEDED`, as `daily_cap` or `per_txn_cap`,
+  which recover under completely different interventions.
 - `recoverableUnder` nullable Json — ground truth recoverability, ONLY populated for
   synthetic records. Maps each intervention type to whether it would have succeeded and
   after what delay:

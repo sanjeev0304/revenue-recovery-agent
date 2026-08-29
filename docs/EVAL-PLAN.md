@@ -89,6 +89,31 @@ the hit rate lands near 28-30%. This is far above the PRD's 15% target. The targ
 written before the circularity was noticed and is not achievable alongside a meaningful
 OPAQUE_BANK_DECLINE metric. Report the real number and this reason.
 
+### Reading the opaque-subset number
+
+The aggregate accuracy on the opaque subset is not one homogeneous measurement. Three
+things inflate it, and each must be reported alongside it rather than folded into it.
+
+**Split by burst membership.** Inside a downtime incident roughly three quarters of the
+sibling failures carry `bank_technical_error`, so a masked record in that window sees
+`sameReasonShare` near 0.75 pointing straight at its own true cause. That is a lookup with
+one hop. Masked `INSUFFICIENT_FUNDS` and `AUTH_FAILED` records scatter independently and get
+no equivalent assist. Report opaque-subset accuracy split into **masked-in-burst** and
+**masked-scattered**, with raw counts for each. If those two diverge sharply, that is the
+honest picture and a more useful result than one blended number.
+
+**The structurally easy pair.** `INSTRUMENT_INVALID` (P(upi) 0.30, mean prior attempts 1.36)
+and `AUTH_FAILED` (0.50, 1.10) are separable on method and attempt count alone once masked.
+That is realistic, but it means part of the aggregate is carried by a pair that needs no
+real inference. Flag it so the aggregate is read with that in mind.
+
+**The salary-window circularity.** The policy engine's salary-window retry rule targets the
+1st and last working day of the month, and the generator plants both the insufficient-funds
+failure trough and the funds-arrival delay around that same window. The measured benefit of
+that rule is therefore partly an artefact of the generator's own assumption about Indian
+salary cycles. The assumption is defensible; assuming it and then rewarding it is a thing a
+reviewer should be told, not left to find. State it in the README.
+
 ## Arms
 
 **Baseline** — as defined in `docs/POLICY-SPEC.md`. Fixed retries at +1h, +6h, +24h, max 3,
@@ -113,16 +138,36 @@ random seed.
 - **Cost per recovery** — assume a per-attempt gateway cost and a per-message cost;
   state the assumed values explicitly rather than hiding them
 
+### Money, not accuracy
+
+- **Money recovered under majority-class guessing** — reported alongside classification
+  accuracy, as a third eval arm that always predicts `OPAQUE_BANK_DECLINE` on the opaque
+  subset and runs that playbook. A model can sit below the 54.8% majority baseline and
+  still recover more money if its errors are cheap, or beat it while recovering less if it
+  is wrong on the expensive tail. Accuracy is the wrong headline for a revenue product.
+- **Cost-weighted confusion matrix** — every `(predicted, true)` cell is scored by running
+  the predicted cause's playbook against that record's real `recoverableUnder`, reporting
+  money recovered against an oracle that knew the true cause, plus wasted charge attempts.
+  No invented severity weights: the cost falls out of the playbooks and the per-attempt and
+  per-message costs already required above.
+  `ISSUER_DOWNTIME` vs `GATEWAY_DOWNTIME` is expected to be the hardest pair and to cost
+  almost nothing, since both playbooks retry and only the ladder differs. Errors concentrated
+  where errors are cheap is a stronger result than raw accuracy, and this is how to show it.
+
 ### Diagnosis quality
 - **Classification accuracy** — predicted `rootCause` vs `trueCause`
 - **Per-class precision and recall** — with the confusion matrix included
 - **LLM hit rate** — share of records that required an LLM call
 - **RISK_DECLINE recall** — reported separately. This is the safety-critical class;
   a missed risk decline means the agent retried something it must never retry.
-- **OPAQUE_BANK_DECLINE accuracy** — reported separately. This is the class where the
-  LLM does real work rather than confirming a lookup, so it is the honest test of
-  whether the model adds anything. If accuracy here is no better than the majority-class
-  guess, say so.
+- **OPAQUE_BANK_DECLINE accuracy** — reported separately, **in aggregate against the 54.8%
+  majority-class baseline**, with raw counts. This is the class where the LLM does real work
+  rather than confirming a lookup, so it is the honest test of whether the model adds
+  anything. If accuracy here is no better than the majority-class guess, say so.
+  Per-underlying-cause precision inside this subset is **not** reported: at holdout scale the
+  masked records number roughly 60, spread across eight causes, with the rarest at one or two
+  records. Those cells are under-powered and a precision figure on them would be noise
+  presented as measurement. State that explicitly rather than printing the table.
 
 ### Customer impact
 - **Contacts sent per recovered payment**

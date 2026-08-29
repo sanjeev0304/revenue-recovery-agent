@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { rootCauseSchema, type PaymentFacts, type RootCause } from './types.js'
+import type { RecentFailureWindow } from './burst.js'
 
 export const llmDiagnosisSchema = z.object({
   rootCause: rootCauseSchema,
@@ -74,8 +75,10 @@ const CANDIDATE_CAUSES: readonly RootCause[] = [
 export interface DiagnosisPromptInput {
   payment: PaymentFacts
   localHour: number
+  localDayOfMonth: number
   priorAttempts: number
   priorReasons: readonly string[]
+  burst?: RecentFailureWindow
 }
 
 export function buildDiagnosisPrompt(input: DiagnosisPromptInput): string {
@@ -91,8 +94,10 @@ export function buildDiagnosisPrompt(input: DiagnosisPromptInput): string {
     `- gateway source: ${payment.failure.source ?? 'unknown'}`,
     `- gateway step: ${payment.failure.step ?? 'unknown'}`,
     `- local hour of attempt: ${input.localHour}`,
+    `- local day of month: ${input.localDayOfMonth}`,
     `- prior failed attempts for this payment: ${input.priorAttempts}`,
     `- prior reasons seen: ${input.priorReasons.length > 0 ? input.priorReasons.join(', ') : 'none'}`,
+    ...burstLines(input.burst),
     '',
     `Choose exactly one rootCause from: ${CANDIDATE_CAUSES.join(', ')}.`,
     'Use UNKNOWN only when the evidence genuinely does not favour any cause.',
@@ -101,6 +106,16 @@ export function buildDiagnosisPrompt(input: DiagnosisPromptInput): string {
     'Respond with JSON only, no prose and no code fence:',
     '{"rootCause": "...", "confidence": 0.0, "reasoning": "one or two sentences"}',
   ].join('\n')
+}
+
+function burstLines(burst: RecentFailureWindow | undefined): string[] {
+  if (burst === undefined) return []
+  const minutes = Math.round(burst.windowMs / 60_000)
+  return [
+    `- merchant-wide failures in the last ${minutes} min: ${burst.failuresInWindow} (typical: ${burst.baselineForWindow}, ratio ${burst.ratio.toFixed(1)}x)`,
+    `- share of those on this same method: ${burst.sameMethodShare.toFixed(2)}`,
+    `- share of those with an identical gateway reason: ${burst.sameReasonShare.toFixed(2)}`,
+  ]
 }
 
 export function fallbackDiagnosis(error: string): LlmDiagnosis {
