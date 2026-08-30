@@ -83,6 +83,7 @@ enum WebhookStatus {
 enum EvalArm {
   baseline
   agent
+  majority_class
 }
 
 model Customer {
@@ -252,6 +253,7 @@ model EvalRun {
   splitName      String
   seed           Int?
   arm            EvalArm
+  llmEnabled     Boolean   @default(true)
   metrics        Json
   notes          String?
 

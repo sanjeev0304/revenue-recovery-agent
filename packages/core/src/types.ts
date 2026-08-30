@@ -62,7 +62,7 @@ export type AuditEvent = z.infer<typeof auditEventSchema>
 export const evalSplitSchema = z.enum(['train', 'holdout'])
 export type EvalSplit = z.infer<typeof evalSplitSchema>
 
-export const evalArmSchema = z.enum(['baseline', 'agent'])
+export const evalArmSchema = z.enum(['baseline', 'agent', 'majority_class'])
 export type EvalArm = z.infer<typeof evalArmSchema>
 
 export const errorSourceSchema = z.enum([

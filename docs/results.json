@@ -1,0 +1,1397 @@
+{
+  "generatedAt": "2026-08-30T19:26:48.999Z",
+  "datasetVersion": "v1",
+  "split": "train",
+  "recordCount": 1100,
+  "skipped": 0,
+  "costAssumptions": [
+    "charge attempt: 300 paise (₹3.00) per gateway attempt, successful or not",
+    "customer message: 25 paise (₹0.25) per nudge delivered",
+    "payment links are free to mint and are not charged",
+    "escalations are not costed: a human queue has a real cost but not one this dataset can support a number for"
+  ],
+  "arms": [
+    {
+      "key": "baseline",
+      "label": "baseline (naive retry)",
+      "arm": "baseline",
+      "llmEnabled": false,
+      "processed": 1100,
+      "recovered": 246,
+      "recoveredPaise": 72053131,
+      "totalPaise": 512901002,
+      "chargeAttempts": 3022,
+      "wastedChargeAttempts": 2130,
+      "contacts": 0,
+      "linksIssued": 0,
+      "escalated": 0,
+      "vetoed": 0,
+      "vetoedBy": {},
+      "quietHoursViolations": 0,
+      "operationalCostPaise": 906600,
+      "byCause": {
+        "CUSTOMER_ABANDONED": {
+          "total": 220,
+          "recovered": 0,
+          "totalPaise": 61539260,
+          "recoveredPaise": 0
+        },
+        "OPAQUE_BANK_DECLINE": {
+          "total": 174,
+          "recovered": 55,
+          "totalPaise": 47879278,
+          "recoveredPaise": 16627932
+        },
+        "INSTRUMENT_INVALID": {
+          "total": 77,
+          "recovered": 0,
+          "totalPaise": 13941030,
+          "recoveredPaise": 0
+        },
+        "INSUFFICIENT_FUNDS": {
+          "total": 209,
+          "recovered": 18,
+          "totalPaise": 101953002,
+          "recoveredPaise": 7118691
+        },
+        "AUTH_FAILED": {
+          "total": 143,
+          "recovered": 0,
+          "totalPaise": 25294631,
+          "recoveredPaise": 0
+        },
+        "GATEWAY_DOWNTIME": {
+          "total": 68,
+          "recovered": 63,
+          "totalPaise": 13625573,
+          "recoveredPaise": 12813778
+        },
+        "RISK_DECLINE": {
+          "total": 44,
+          "recovered": 0,
+          "totalPaise": 44864459,
+          "recoveredPaise": 0
+        },
+        "TRANSACTION_LIMIT_EXCEEDED": {
+          "total": 33,
+          "recovered": 23,
+          "totalPaise": 171515443,
+          "recoveredPaise": 14623286
+        },
+        "TECHNICAL_UNRESOLVED": {
+          "total": 33,
+          "recovered": 0,
+          "totalPaise": 9884339,
+          "recoveredPaise": 0
+        },
+        "ISSUER_DOWNTIME": {
+          "total": 99,
+          "recovered": 87,
+          "totalPaise": 22403987,
+          "recoveredPaise": 20869444
+        }
+      }
+    },
+    {
+      "key": "agent",
+      "label": "agent (LLM on)",
+      "arm": "agent",
+      "llmEnabled": true,
+      "processed": 1100,
+      "recovered": 615,
+      "recoveredPaise": 261191844,
+      "totalPaise": 512901002,
+      "chargeAttempts": 902,
+      "wastedChargeAttempts": 294,
+      "contacts": 242,
+      "linksIssued": 422,
+      "escalated": 178,
+      "vetoed": 293,
+      "vetoedBy": {
+        "QUIET_HOURS": 262,
+        "OPT_OUT": 16,
+        "COOLDOWN": 15
+      },
+      "quietHoursViolations": 0,
+      "operationalCostPaise": 276650,
+      "byCause": {
+        "CUSTOMER_ABANDONED": {
+          "total": 220,
+          "recovered": 140,
+          "totalPaise": 61539260,
+          "recoveredPaise": 39095871
+        },
+        "OPAQUE_BANK_DECLINE": {
+          "total": 174,
+          "recovered": 45,
+          "totalPaise": 47879278,
+          "recoveredPaise": 12033672
+        },
+        "INSTRUMENT_INVALID": {
+          "total": 77,
+          "recovered": 33,
+          "totalPaise": 13941030,
+          "recoveredPaise": 7331759
+        },
+        "INSUFFICIENT_FUNDS": {
+          "total": 209,
+          "recovered": 139,
+          "totalPaise": 101953002,
+          "recoveredPaise": 71790810
+        },
+        "AUTH_FAILED": {
+          "total": 143,
+          "recovered": 88,
+          "totalPaise": 25294631,
+          "recoveredPaise": 15427600
+        },
+        "GATEWAY_DOWNTIME": {
+          "total": 68,
+          "recovered": 62,
+          "totalPaise": 13625573,
+          "recoveredPaise": 12721386
+        },
+        "RISK_DECLINE": {
+          "total": 44,
+          "recovered": 0,
+          "totalPaise": 44864459,
+          "recoveredPaise": 0
+        },
+        "TRANSACTION_LIMIT_EXCEEDED": {
+          "total": 33,
+          "recovered": 21,
+          "totalPaise": 171515443,
+          "recoveredPaise": 82086758
+        },
+        "TECHNICAL_UNRESOLVED": {
+          "total": 33,
+          "recovered": 0,
+          "totalPaise": 9884339,
+          "recoveredPaise": 0
+        },
+        "ISSUER_DOWNTIME": {
+          "total": 99,
+          "recovered": 87,
+          "totalPaise": 22403987,
+          "recoveredPaise": 20703988
+        }
+      }
+    },
+    {
+      "key": "majority_class",
+      "label": "majority class (always OPAQUE_BANK_DECLINE)",
+      "arm": "majority_class",
+      "llmEnabled": false,
+      "processed": 1100,
+      "recovered": 607,
+      "recoveredPaise": 257681891,
+      "totalPaise": 512901002,
+      "chargeAttempts": 931,
+      "wastedChargeAttempts": 308,
+      "contacts": 225,
+      "linksIssued": 391,
+      "escalated": 166,
+      "vetoed": 314,
+      "vetoedBy": {
+        "QUIET_HOURS": 283,
+        "OPT_OUT": 16,
+        "COOLDOWN": 15
+      },
+      "quietHoursViolations": 0,
+      "operationalCostPaise": 284925,
+      "byCause": {
+        "CUSTOMER_ABANDONED": {
+          "total": 220,
+          "recovered": 139,
+          "totalPaise": 61539260,
+          "recoveredPaise": 38734135
+        },
+        "OPAQUE_BANK_DECLINE": {
+          "total": 174,
+          "recovered": 44,
+          "totalPaise": 47879278,
+          "recoveredPaise": 12065416
+        },
+        "INSTRUMENT_INVALID": {
+          "total": 77,
+          "recovered": 33,
+          "totalPaise": 13941030,
+          "recoveredPaise": 7331759
+        },
+        "INSUFFICIENT_FUNDS": {
+          "total": 209,
+          "recovered": 136,
+          "totalPaise": 101953002,
+          "recoveredPaise": 69878936
+        },
+        "AUTH_FAILED": {
+          "total": 143,
+          "recovered": 85,
+          "totalPaise": 25294631,
+          "recoveredPaise": 14192204
+        },
+        "GATEWAY_DOWNTIME": {
+          "total": 68,
+          "recovered": 63,
+          "totalPaise": 13625573,
+          "recoveredPaise": 12813778
+        },
+        "RISK_DECLINE": {
+          "total": 44,
+          "recovered": 0,
+          "totalPaise": 44864459,
+          "recoveredPaise": 0
+        },
+        "TRANSACTION_LIMIT_EXCEEDED": {
+          "total": 33,
+          "recovered": 20,
+          "totalPaise": 171515443,
+          "recoveredPaise": 81935588
+        },
+        "TECHNICAL_UNRESOLVED": {
+          "total": 33,
+          "recovered": 0,
+          "totalPaise": 9884339,
+          "recoveredPaise": 0
+        },
+        "ISSUER_DOWNTIME": {
+          "total": 99,
+          "recovered": 87,
+          "totalPaise": 22403987,
+          "recoveredPaise": 20730075
+        }
+      }
+    },
+    {
+      "key": "agent_no_llm",
+      "label": "agent (LLM off)",
+      "arm": "agent",
+      "llmEnabled": false,
+      "processed": 1100,
+      "recovered": 509,
+      "recoveredPaise": 225947817,
+      "totalPaise": 512901002,
+      "chargeAttempts": 612,
+      "wastedChargeAttempts": 121,
+      "contacts": 167,
+      "linksIssued": 391,
+      "escalated": 448,
+      "vetoed": 130,
+      "vetoedBy": {
+        "QUIET_HOURS": 106,
+        "OPT_OUT": 9,
+        "COOLDOWN": 15
+      },
+      "quietHoursViolations": 0,
+      "operationalCostPaise": 187775,
+      "byCause": {
+        "CUSTOMER_ABANDONED": {
+          "total": 220,
+          "recovered": 139,
+          "totalPaise": 61539260,
+          "recoveredPaise": 38734135
+        },
+        "OPAQUE_BANK_DECLINE": {
+          "total": 174,
+          "recovered": 0,
+          "totalPaise": 47879278,
+          "recoveredPaise": 0
+        },
+        "INSTRUMENT_INVALID": {
+          "total": 77,
+          "recovered": 33,
+          "totalPaise": 13941030,
+          "recoveredPaise": 7331759
+        },
+        "INSUFFICIENT_FUNDS": {
+          "total": 209,
+          "recovered": 128,
+          "totalPaise": 101953002,
+          "recoveredPaise": 62532618
+        },
+        "AUTH_FAILED": {
+          "total": 143,
+          "recovered": 82,
+          "totalPaise": 25294631,
+          "recoveredPaise": 13895835
+        },
+        "GATEWAY_DOWNTIME": {
+          "total": 68,
+          "recovered": 46,
+          "totalPaise": 13625573,
+          "recoveredPaise": 10151681
+        },
+        "RISK_DECLINE": {
+          "total": 44,
+          "recovered": 0,
+          "totalPaise": 44864459,
+          "recoveredPaise": 0
+        },
+        "TRANSACTION_LIMIT_EXCEEDED": {
+          "total": 33,
+          "recovered": 18,
+          "totalPaise": 171515443,
+          "recoveredPaise": 79387619
+        },
+        "TECHNICAL_UNRESOLVED": {
+          "total": 33,
+          "recovered": 0,
+          "totalPaise": 9884339,
+          "recoveredPaise": 0
+        },
+        "ISSUER_DOWNTIME": {
+          "total": 99,
+          "recovered": 63,
+          "totalPaise": 22403987,
+          "recoveredPaise": 13914170
+        }
+      }
+    }
+  ],
+  "oracle": {
+    "key": "oracle",
+    "label": "oracle (knew the true cause)",
+    "arm": "agent",
+    "llmEnabled": false,
+    "processed": 1100,
+    "recovered": 658,
+    "recoveredPaise": 273837393,
+    "totalPaise": 512901002,
+    "chargeAttempts": 964,
+    "wastedChargeAttempts": 267,
+    "contacts": 225,
+    "linksIssued": 440,
+    "escalated": 173,
+    "vetoed": 253,
+    "vetoedBy": {
+      "QUIET_HOURS": 218,
+      "OPT_OUT": 16,
+      "COOLDOWN": 19
+    },
+    "quietHoursViolations": 0,
+    "operationalCostPaise": 294825,
+    "byCause": {
+      "CUSTOMER_ABANDONED": {
+        "total": 220,
+        "recovered": 148,
+        "totalPaise": 61539260,
+        "recoveredPaise": 40822008
+      },
+      "OPAQUE_BANK_DECLINE": {
+        "total": 174,
+        "recovered": 44,
+        "totalPaise": 47879278,
+        "recoveredPaise": 12065416
+      },
+      "INSTRUMENT_INVALID": {
+        "total": 77,
+        "recovered": 37,
+        "totalPaise": 13941030,
+        "recoveredPaise": 7734948
+      },
+      "INSUFFICIENT_FUNDS": {
+        "total": 209,
+        "recovered": 155,
+        "totalPaise": 101953002,
+        "recoveredPaise": 79394894
+      },
+      "AUTH_FAILED": {
+        "total": 143,
+        "recovered": 104,
+        "totalPaise": 25294631,
+        "recoveredPaise": 19188483
+      },
+      "GATEWAY_DOWNTIME": {
+        "total": 68,
+        "recovered": 63,
+        "totalPaise": 13625573,
+        "recoveredPaise": 12813778
+      },
+      "RISK_DECLINE": {
+        "total": 44,
+        "recovered": 0,
+        "totalPaise": 44864459,
+        "recoveredPaise": 0
+      },
+      "TRANSACTION_LIMIT_EXCEEDED": {
+        "total": 33,
+        "recovered": 21,
+        "totalPaise": 171515443,
+        "recoveredPaise": 81138810
+      },
+      "TECHNICAL_UNRESOLVED": {
+        "total": 33,
+        "recovered": 0,
+        "totalPaise": 9884339,
+        "recoveredPaise": 0
+      },
+      "ISSUER_DOWNTIME": {
+        "total": 99,
+        "recovered": 86,
+        "totalPaise": 22403987,
+        "recoveredPaise": 20679056
+      }
+    }
+  },
+  "classification": {
+    "agent": {
+      "total": 1100,
+      "correct": 935,
+      "llmClassified": 319,
+      "perClass": [
+        {
+          "cause": "INSUFFICIENT_FUNDS",
+          "support": 209,
+          "predicted": 174,
+          "tp": 171,
+          "fp": 3,
+          "fn": 38
+        },
+        {
+          "cause": "TRANSACTION_LIMIT_EXCEEDED",
+          "support": 33,
+          "predicted": 43,
+          "tp": 29,
+          "fp": 14,
+          "fn": 4
+        },
+        {
+          "cause": "AUTH_FAILED",
+          "support": 143,
+          "predicted": 138,
+          "tp": 120,
+          "fp": 18,
+          "fn": 23
+        },
+        {
+          "cause": "CUSTOMER_ABANDONED",
+          "support": 220,
+          "predicted": 216,
+          "tp": 204,
+          "fp": 12,
+          "fn": 16
+        },
+        {
+          "cause": "ISSUER_DOWNTIME",
+          "support": 99,
+          "predicted": 70,
+          "tp": 70,
+          "fp": 0,
+          "fn": 29
+        },
+        {
+          "cause": "GATEWAY_DOWNTIME",
+          "support": 68,
+          "predicted": 51,
+          "tp": 51,
+          "fp": 0,
+          "fn": 17
+        },
+        {
+          "cause": "INSTRUMENT_INVALID",
+          "support": 77,
+          "predicted": 69,
+          "tp": 69,
+          "fp": 0,
+          "fn": 8
+        },
+        {
+          "cause": "RISK_DECLINE",
+          "support": 44,
+          "predicted": 44,
+          "tp": 44,
+          "fp": 0,
+          "fn": 0
+        },
+        {
+          "cause": "OPAQUE_BANK_DECLINE",
+          "support": 174,
+          "predicted": 270,
+          "tp": 152,
+          "fp": 118,
+          "fn": 22
+        },
+        {
+          "cause": "TECHNICAL_UNRESOLVED",
+          "support": 33,
+          "predicted": 25,
+          "tp": 25,
+          "fp": 0,
+          "fn": 8
+        },
+        {
+          "cause": "UNKNOWN",
+          "support": 0,
+          "predicted": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      ],
+      "confusion": {
+        "CUSTOMER_ABANDONED": {
+          "CUSTOMER_ABANDONED": 204,
+          "GATEWAY_DOWNTIME": 2,
+          "OPAQUE_BANK_DECLINE": 2,
+          "TRANSACTION_LIMIT_EXCEEDED": 1,
+          "ISSUER_DOWNTIME": 3,
+          "INSUFFICIENT_FUNDS": 3,
+          "TECHNICAL_UNRESOLVED": 1
+        },
+        "OPAQUE_BANK_DECLINE": {
+          "OPAQUE_BANK_DECLINE": 152,
+          "AUTH_FAILED": 21,
+          "GATEWAY_DOWNTIME": 13,
+          "INSUFFICIENT_FUNDS": 32,
+          "INSTRUMENT_INVALID": 7,
+          "ISSUER_DOWNTIME": 21,
+          "CUSTOMER_ABANDONED": 14,
+          "TRANSACTION_LIMIT_EXCEEDED": 3,
+          "TECHNICAL_UNRESOLVED": 7
+        },
+        "INSTRUMENT_INVALID": {
+          "INSTRUMENT_INVALID": 69
+        },
+        "INSUFFICIENT_FUNDS": {
+          "INSUFFICIENT_FUNDS": 171,
+          "INSTRUMENT_INVALID": 1,
+          "OPAQUE_BANK_DECLINE": 1,
+          "AUTH_FAILED": 1
+        },
+        "AUTH_FAILED": {
+          "AUTH_FAILED": 120,
+          "ISSUER_DOWNTIME": 5,
+          "INSUFFICIENT_FUNDS": 1,
+          "OPAQUE_BANK_DECLINE": 9,
+          "CUSTOMER_ABANDONED": 1,
+          "GATEWAY_DOWNTIME": 2
+        },
+        "GATEWAY_DOWNTIME": {
+          "GATEWAY_DOWNTIME": 51
+        },
+        "RISK_DECLINE": {
+          "RISK_DECLINE": 44
+        },
+        "TRANSACTION_LIMIT_EXCEEDED": {
+          "TRANSACTION_LIMIT_EXCEEDED": 29,
+          "OPAQUE_BANK_DECLINE": 10,
+          "INSUFFICIENT_FUNDS": 2,
+          "CUSTOMER_ABANDONED": 1,
+          "AUTH_FAILED": 1
+        },
+        "TECHNICAL_UNRESOLVED": {
+          "TECHNICAL_UNRESOLVED": 25
+        },
+        "ISSUER_DOWNTIME": {
+          "ISSUER_DOWNTIME": 70
+        }
+      }
+    },
+    "majority_class": {
+      "total": 1100,
+      "correct": 955,
+      "llmClassified": 319,
+      "perClass": [
+        {
+          "cause": "INSUFFICIENT_FUNDS",
+          "support": 209,
+          "predicted": 171,
+          "tp": 171,
+          "fp": 0,
+          "fn": 38
+        },
+        {
+          "cause": "TRANSACTION_LIMIT_EXCEEDED",
+          "support": 33,
+          "predicted": 29,
+          "tp": 29,
+          "fp": 0,
+          "fn": 4
+        },
+        {
+          "cause": "AUTH_FAILED",
+          "support": 143,
+          "predicted": 118,
+          "tp": 118,
+          "fp": 0,
+          "fn": 25
+        },
+        {
+          "cause": "CUSTOMER_ABANDONED",
+          "support": 220,
+          "predicted": 204,
+          "tp": 204,
+          "fp": 0,
+          "fn": 16
+        },
+        {
+          "cause": "ISSUER_DOWNTIME",
+          "support": 99,
+          "predicted": 70,
+          "tp": 70,
+          "fp": 0,
+          "fn": 29
+        },
+        {
+          "cause": "GATEWAY_DOWNTIME",
+          "support": 68,
+          "predicted": 51,
+          "tp": 51,
+          "fp": 0,
+          "fn": 17
+        },
+        {
+          "cause": "INSTRUMENT_INVALID",
+          "support": 77,
+          "predicted": 69,
+          "tp": 69,
+          "fp": 0,
+          "fn": 8
+        },
+        {
+          "cause": "RISK_DECLINE",
+          "support": 44,
+          "predicted": 44,
+          "tp": 44,
+          "fp": 0,
+          "fn": 0
+        },
+        {
+          "cause": "OPAQUE_BANK_DECLINE",
+          "support": 174,
+          "predicted": 319,
+          "tp": 174,
+          "fp": 145,
+          "fn": 0
+        },
+        {
+          "cause": "TECHNICAL_UNRESOLVED",
+          "support": 33,
+          "predicted": 25,
+          "tp": 25,
+          "fp": 0,
+          "fn": 8
+        },
+        {
+          "cause": "UNKNOWN",
+          "support": 0,
+          "predicted": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      ],
+      "confusion": {
+        "CUSTOMER_ABANDONED": {
+          "CUSTOMER_ABANDONED": 204
+        },
+        "OPAQUE_BANK_DECLINE": {
+          "OPAQUE_BANK_DECLINE": 174,
+          "GATEWAY_DOWNTIME": 17,
+          "AUTH_FAILED": 25,
+          "INSUFFICIENT_FUNDS": 38,
+          "INSTRUMENT_INVALID": 8,
+          "ISSUER_DOWNTIME": 29,
+          "TRANSACTION_LIMIT_EXCEEDED": 4,
+          "CUSTOMER_ABANDONED": 16,
+          "TECHNICAL_UNRESOLVED": 8
+        },
+        "INSTRUMENT_INVALID": {
+          "INSTRUMENT_INVALID": 69
+        },
+        "INSUFFICIENT_FUNDS": {
+          "INSUFFICIENT_FUNDS": 171
+        },
+        "AUTH_FAILED": {
+          "AUTH_FAILED": 118
+        },
+        "GATEWAY_DOWNTIME": {
+          "GATEWAY_DOWNTIME": 51
+        },
+        "RISK_DECLINE": {
+          "RISK_DECLINE": 44
+        },
+        "TRANSACTION_LIMIT_EXCEEDED": {
+          "TRANSACTION_LIMIT_EXCEEDED": 29
+        },
+        "TECHNICAL_UNRESOLVED": {
+          "TECHNICAL_UNRESOLVED": 25
+        },
+        "ISSUER_DOWNTIME": {
+          "ISSUER_DOWNTIME": 70
+        }
+      }
+    },
+    "agent_no_llm": {
+      "total": 1100,
+      "correct": 955,
+      "llmClassified": 319,
+      "perClass": [
+        {
+          "cause": "INSUFFICIENT_FUNDS",
+          "support": 209,
+          "predicted": 171,
+          "tp": 171,
+          "fp": 0,
+          "fn": 38
+        },
+        {
+          "cause": "TRANSACTION_LIMIT_EXCEEDED",
+          "support": 33,
+          "predicted": 29,
+          "tp": 29,
+          "fp": 0,
+          "fn": 4
+        },
+        {
+          "cause": "AUTH_FAILED",
+          "support": 143,
+          "predicted": 118,
+          "tp": 118,
+          "fp": 0,
+          "fn": 25
+        },
+        {
+          "cause": "CUSTOMER_ABANDONED",
+          "support": 220,
+          "predicted": 204,
+          "tp": 204,
+          "fp": 0,
+          "fn": 16
+        },
+        {
+          "cause": "ISSUER_DOWNTIME",
+          "support": 99,
+          "predicted": 70,
+          "tp": 70,
+          "fp": 0,
+          "fn": 29
+        },
+        {
+          "cause": "GATEWAY_DOWNTIME",
+          "support": 68,
+          "predicted": 51,
+          "tp": 51,
+          "fp": 0,
+          "fn": 17
+        },
+        {
+          "cause": "INSTRUMENT_INVALID",
+          "support": 77,
+          "predicted": 69,
+          "tp": 69,
+          "fp": 0,
+          "fn": 8
+        },
+        {
+          "cause": "RISK_DECLINE",
+          "support": 44,
+          "predicted": 44,
+          "tp": 44,
+          "fp": 0,
+          "fn": 0
+        },
+        {
+          "cause": "OPAQUE_BANK_DECLINE",
+          "support": 174,
+          "predicted": 319,
+          "tp": 174,
+          "fp": 145,
+          "fn": 0
+        },
+        {
+          "cause": "TECHNICAL_UNRESOLVED",
+          "support": 33,
+          "predicted": 25,
+          "tp": 25,
+          "fp": 0,
+          "fn": 8
+        },
+        {
+          "cause": "UNKNOWN",
+          "support": 0,
+          "predicted": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      ],
+      "confusion": {
+        "CUSTOMER_ABANDONED": {
+          "CUSTOMER_ABANDONED": 204
+        },
+        "OPAQUE_BANK_DECLINE": {
+          "OPAQUE_BANK_DECLINE": 174,
+          "GATEWAY_DOWNTIME": 17,
+          "AUTH_FAILED": 25,
+          "INSUFFICIENT_FUNDS": 38,
+          "INSTRUMENT_INVALID": 8,
+          "ISSUER_DOWNTIME": 29,
+          "TRANSACTION_LIMIT_EXCEEDED": 4,
+          "CUSTOMER_ABANDONED": 16,
+          "TECHNICAL_UNRESOLVED": 8
+        },
+        "INSTRUMENT_INVALID": {
+          "INSTRUMENT_INVALID": 69
+        },
+        "INSUFFICIENT_FUNDS": {
+          "INSUFFICIENT_FUNDS": 171
+        },
+        "AUTH_FAILED": {
+          "AUTH_FAILED": 118
+        },
+        "GATEWAY_DOWNTIME": {
+          "GATEWAY_DOWNTIME": 51
+        },
+        "RISK_DECLINE": {
+          "RISK_DECLINE": 44
+        },
+        "TRANSACTION_LIMIT_EXCEEDED": {
+          "TRANSACTION_LIMIT_EXCEEDED": 29
+        },
+        "TECHNICAL_UNRESOLVED": {
+          "TECHNICAL_UNRESOLVED": 25
+        },
+        "ISSUER_DOWNTIME": {
+          "ISSUER_DOWNTIME": 70
+        }
+      }
+    }
+  },
+  "opaque": {
+    "agent": {
+      "majorityCause": "OPAQUE_BANK_DECLINE",
+      "majorityCount": 174,
+      "all": {
+        "total": 319,
+        "correct": 154
+      },
+      "genuine": {
+        "total": 174,
+        "correct": 152
+      },
+      "masked": {
+        "total": 145,
+        "correct": 2
+      },
+      "maskedInBurst": {
+        "total": 46,
+        "correct": 0
+      },
+      "maskedScattered": {
+        "total": 99,
+        "correct": 2
+      }
+    },
+    "majority_class": {
+      "majorityCause": "OPAQUE_BANK_DECLINE",
+      "majorityCount": 174,
+      "all": {
+        "total": 319,
+        "correct": 174
+      },
+      "genuine": {
+        "total": 174,
+        "correct": 174
+      },
+      "masked": {
+        "total": 145,
+        "correct": 0
+      },
+      "maskedInBurst": {
+        "total": 46,
+        "correct": 0
+      },
+      "maskedScattered": {
+        "total": 99,
+        "correct": 0
+      }
+    },
+    "agent_no_llm": {
+      "majorityCause": "OPAQUE_BANK_DECLINE",
+      "majorityCount": 174,
+      "all": {
+        "total": 319,
+        "correct": 174
+      },
+      "genuine": {
+        "total": 174,
+        "correct": 174
+      },
+      "masked": {
+        "total": 145,
+        "correct": 0
+      },
+      "maskedInBurst": {
+        "total": 46,
+        "correct": 0
+      },
+      "maskedScattered": {
+        "total": 99,
+        "correct": 0
+      }
+    }
+  },
+  "confusion": [
+    {
+      "predicted": "AUTH_FAILED",
+      "trueCause": "AUTH_FAILED",
+      "n": 120,
+      "recoveredPaise": 14438678,
+      "oracleRecoveredPaise": 14438678,
+      "shortfallPaise": 0,
+      "chargeAttempts": 0,
+      "wastedChargeAttempts": 0,
+      "contacts": 16,
+      "costPaise": 400
+    },
+    {
+      "predicted": "AUTH_FAILED",
+      "trueCause": "OPAQUE_BANK_DECLINE",
+      "n": 9,
+      "recoveredPaise": 581730,
+      "oracleRecoveredPaise": 154736,
+      "shortfallPaise": -426994,
+      "chargeAttempts": 0,
+      "wastedChargeAttempts": 0,
+      "contacts": 4,
+      "costPaise": 100
+    },
+    {
+      "predicted": "AUTH_FAILED",
+      "trueCause": "ISSUER_DOWNTIME",
+      "n": 5,
+      "recoveredPaise": 441646,
+      "oracleRecoveredPaise": 642892,
+      "shortfallPaise": 201246,
+      "chargeAttempts": 0,
+      "wastedChargeAttempts": 0,
+      "contacts": 2,
+      "costPaise": 50
+    },
+    {
+      "predicted": "AUTH_FAILED",
+      "trueCause": "GATEWAY_DOWNTIME",
+      "n": 2,
+      "recoveredPaise": 69007,
+      "oracleRecoveredPaise": 161399,
+      "shortfallPaise": 92392,
+      "chargeAttempts": 0,
+      "wastedChargeAttempts": 0,
+      "contacts": 1,
+      "costPaise": 25
+    },
+    {
+      "predicted": "AUTH_FAILED",
+      "trueCause": "INSUFFICIENT_FUNDS",
+      "n": 1,
+      "recoveredPaise": 0,
+      "oracleRecoveredPaise": 1066871,
+      "shortfallPaise": 1066871,
+      "chargeAttempts": 0,
+      "wastedChargeAttempts": 0,
+      "contacts": 1,
+      "costPaise": 25
+    },
+    {
+      "predicted": "AUTH_FAILED",
+      "trueCause": "CUSTOMER_ABANDONED",
+      "n": 1,
+      "recoveredPaise": 361736,
+      "oracleRecoveredPaise": 361736,
+      "shortfallPaise": 0,
+      "chargeAttempts": 0,
+      "wastedChargeAttempts": 0,
+      "contacts": 1,
+      "costPaise": 25
+    },
+    {
+      "predicted": "CUSTOMER_ABANDONED",
+      "trueCause": "CUSTOMER_ABANDONED",
+      "n": 204,
+      "recoveredPaise": 38734135,
+      "oracleRecoveredPaise": 38734135,
+      "shortfallPaise": 0,
+      "chargeAttempts": 0,
+      "wastedChargeAttempts": 0,
+      "contacts": 64,
+      "costPaise": 1600
+    },
+    {
+      "predicted": "CUSTOMER_ABANDONED",
+      "trueCause": "ISSUER_DOWNTIME",
+      "n": 3,
+      "recoveredPaise": 331744,
+      "oracleRecoveredPaise": 105566,
+      "shortfallPaise": -226178,
+      "chargeAttempts": 0,
+      "wastedChargeAttempts": 0,
+      "contacts": 0,
+      "costPaise": 0
+    },
+    {
+      "predicted": "CUSTOMER_ABANDONED",
+      "trueCause": "INSUFFICIENT_FUNDS",
+      "n": 3,
+      "recoveredPaise": 2450618,
+      "oracleRecoveredPaise": 219392,
+      "shortfallPaise": -2231226,
+      "chargeAttempts": 0,
+      "wastedChargeAttempts": 0,
+      "contacts": 0,
+      "costPaise": 0
+    },
+    {
+      "predicted": "CUSTOMER_ABANDONED",
+      "trueCause": "GATEWAY_DOWNTIME",
+      "n": 2,
+      "recoveredPaise": 125167,
+      "oracleRecoveredPaise": 125167,
+      "shortfallPaise": 0,
+      "chargeAttempts": 0,
+      "wastedChargeAttempts": 0,
+      "contacts": 0,
+      "costPaise": 0
+    },
+    {
+      "predicted": "CUSTOMER_ABANDONED",
+      "trueCause": "OPAQUE_BANK_DECLINE",
+      "n": 2,
+      "recoveredPaise": 0,
+      "oracleRecoveredPaise": 0,
+      "shortfallPaise": 0,
+      "chargeAttempts": 0,
+      "wastedChargeAttempts": 0,
+      "contacts": 4,
+      "costPaise": 100
+    },
+    {
+      "predicted": "CUSTOMER_ABANDONED",
+      "trueCause": "TRANSACTION_LIMIT_EXCEEDED",
+      "n": 1,
+      "recoveredPaise": 151170,
+      "oracleRecoveredPaise": 151170,
+      "shortfallPaise": 0,
+      "chargeAttempts": 0,
+      "wastedChargeAttempts": 0,
+      "contacts": 0,
+      "costPaise": 0
+    },
+    {
+      "predicted": "CUSTOMER_ABANDONED",
+      "trueCause": "TECHNICAL_UNRESOLVED",
+      "n": 1,
+      "recoveredPaise": 0,
+      "oracleRecoveredPaise": 0,
+      "shortfallPaise": 0,
+      "chargeAttempts": 0,
+      "wastedChargeAttempts": 0,
+      "contacts": 2,
+      "costPaise": 50
+    },
+    {
+      "predicted": "GATEWAY_DOWNTIME",
+      "trueCause": "GATEWAY_DOWNTIME",
+      "n": 51,
+      "recoveredPaise": 10151681,
+      "oracleRecoveredPaise": 10151681,
+      "shortfallPaise": 0,
+      "chargeAttempts": 113,
+      "wastedChargeAttempts": 15,
+      "contacts": 0,
+      "costPaise": 33900
+    },
+    {
+      "predicted": "INSTRUMENT_INVALID",
+      "trueCause": "INSTRUMENT_INVALID",
+      "n": 69,
+      "recoveredPaise": 7331759,
+      "oracleRecoveredPaise": 7331759,
+      "shortfallPaise": 0,
+      "chargeAttempts": 0,
+      "wastedChargeAttempts": 0,
+      "contacts": 29,
+      "costPaise": 725
+    },
+    {
+      "predicted": "INSUFFICIENT_FUNDS",
+      "trueCause": "INSUFFICIENT_FUNDS",
+      "n": 171,
+      "recoveredPaise": 62532618,
+      "oracleRecoveredPaise": 62532618,
+      "shortfallPaise": 0,
+      "chargeAttempts": 312,
+      "wastedChargeAttempts": 75,
+      "contacts": 34,
+      "costPaise": 94450
+    },
+    {
+      "predicted": "INSUFFICIENT_FUNDS",
+      "trueCause": "INSTRUMENT_INVALID",
+      "n": 1,
+      "recoveredPaise": 0,
+      "oracleRecoveredPaise": 0,
+      "shortfallPaise": 0,
+      "chargeAttempts": 2,
+      "wastedChargeAttempts": 2,
+      "contacts": 0,
+      "costPaise": 600
+    },
+    {
+      "predicted": "INSUFFICIENT_FUNDS",
+      "trueCause": "OPAQUE_BANK_DECLINE",
+      "n": 1,
+      "recoveredPaise": 0,
+      "oracleRecoveredPaise": 0,
+      "shortfallPaise": 0,
+      "chargeAttempts": 2,
+      "wastedChargeAttempts": 2,
+      "contacts": 1,
+      "costPaise": 625
+    },
+    {
+      "predicted": "INSUFFICIENT_FUNDS",
+      "trueCause": "AUTH_FAILED",
+      "n": 1,
+      "recoveredPaise": 0,
+      "oracleRecoveredPaise": 70695,
+      "shortfallPaise": 70695,
+      "chargeAttempts": 2,
+      "wastedChargeAttempts": 2,
+      "contacts": 0,
+      "costPaise": 600
+    },
+    {
+      "predicted": "ISSUER_DOWNTIME",
+      "trueCause": "ISSUER_DOWNTIME",
+      "n": 70,
+      "recoveredPaise": 13914170,
+      "oracleRecoveredPaise": 13914170,
+      "shortfallPaise": 0,
+      "chargeAttempts": 158,
+      "wastedChargeAttempts": 21,
+      "contacts": 0,
+      "costPaise": 47400
+    },
+    {
+      "predicted": "OPAQUE_BANK_DECLINE",
+      "trueCause": "OPAQUE_BANK_DECLINE",
+      "n": 152,
+      "recoveredPaise": 10445434,
+      "oracleRecoveredPaise": 10445434,
+      "shortfallPaise": 0,
+      "chargeAttempts": 152,
+      "wastedChargeAttempts": 102,
+      "contacts": 27,
+      "costPaise": 46275
+    },
+    {
+      "predicted": "OPAQUE_BANK_DECLINE",
+      "trueCause": "INSUFFICIENT_FUNDS",
+      "n": 32,
+      "recoveredPaise": 6118769,
+      "oracleRecoveredPaise": 14887208,
+      "shortfallPaise": 8768439,
+      "chargeAttempts": 32,
+      "wastedChargeAttempts": 6,
+      "contacts": 12,
+      "costPaise": 9900
+    },
+    {
+      "predicted": "OPAQUE_BANK_DECLINE",
+      "trueCause": "AUTH_FAILED",
+      "n": 21,
+      "recoveredPaise": 296369,
+      "oracleRecoveredPaise": 3986557,
+      "shortfallPaise": 3690188,
+      "chargeAttempts": 21,
+      "wastedChargeAttempts": 21,
+      "contacts": 5,
+      "costPaise": 6425
+    },
+    {
+      "predicted": "OPAQUE_BANK_DECLINE",
+      "trueCause": "ISSUER_DOWNTIME",
+      "n": 21,
+      "recoveredPaise": 6016428,
+      "oracleRecoveredPaise": 6016428,
+      "shortfallPaise": 0,
+      "chargeAttempts": 21,
+      "wastedChargeAttempts": 2,
+      "contacts": 0,
+      "costPaise": 6300
+    },
+    {
+      "predicted": "OPAQUE_BANK_DECLINE",
+      "trueCause": "CUSTOMER_ABANDONED",
+      "n": 14,
+      "recoveredPaise": 0,
+      "oracleRecoveredPaise": 1726137,
+      "shortfallPaise": 1726137,
+      "chargeAttempts": 14,
+      "wastedChargeAttempts": 14,
+      "contacts": 2,
+      "costPaise": 4250
+    },
+    {
+      "predicted": "OPAQUE_BANK_DECLINE",
+      "trueCause": "GATEWAY_DOWNTIME",
+      "n": 13,
+      "recoveredPaise": 2375531,
+      "oracleRecoveredPaise": 2375531,
+      "shortfallPaise": 0,
+      "chargeAttempts": 13,
+      "wastedChargeAttempts": 0,
+      "contacts": 0,
+      "costPaise": 3900
+    },
+    {
+      "predicted": "OPAQUE_BANK_DECLINE",
+      "trueCause": "INSTRUMENT_INVALID",
+      "n": 7,
+      "recoveredPaise": 0,
+      "oracleRecoveredPaise": 403189,
+      "shortfallPaise": 403189,
+      "chargeAttempts": 7,
+      "wastedChargeAttempts": 7,
+      "contacts": 1,
+      "costPaise": 2125
+    },
+    {
+      "predicted": "OPAQUE_BANK_DECLINE",
+      "trueCause": "TECHNICAL_UNRESOLVED",
+      "n": 7,
+      "recoveredPaise": 0,
+      "oracleRecoveredPaise": 0,
+      "shortfallPaise": 0,
+      "chargeAttempts": 7,
+      "wastedChargeAttempts": 7,
+      "contacts": 2,
+      "costPaise": 2150
+    },
+    {
+      "predicted": "OPAQUE_BANK_DECLINE",
+      "trueCause": "TRANSACTION_LIMIT_EXCEEDED",
+      "n": 3,
+      "recoveredPaise": 2547969,
+      "oracleRecoveredPaise": 1600021,
+      "shortfallPaise": -947948,
+      "chargeAttempts": 3,
+      "wastedChargeAttempts": 0,
+      "contacts": 0,
+      "costPaise": 900
+    },
+    {
+      "predicted": "RISK_DECLINE",
+      "trueCause": "RISK_DECLINE",
+      "n": 44,
+      "recoveredPaise": 0,
+      "oracleRecoveredPaise": 0,
+      "shortfallPaise": 0,
+      "chargeAttempts": 0,
+      "wastedChargeAttempts": 0,
+      "contacts": 0,
+      "costPaise": 0
+    },
+    {
+      "predicted": "TECHNICAL_UNRESOLVED",
+      "trueCause": "TECHNICAL_UNRESOLVED",
+      "n": 25,
+      "recoveredPaise": 0,
+      "oracleRecoveredPaise": 0,
+      "shortfallPaise": 0,
+      "chargeAttempts": 0,
+      "wastedChargeAttempts": 0,
+      "contacts": 0,
+      "costPaise": 0
+    },
+    {
+      "predicted": "TRANSACTION_LIMIT_EXCEEDED",
+      "trueCause": "TRANSACTION_LIMIT_EXCEEDED",
+      "n": 29,
+      "recoveredPaise": 79387619,
+      "oracleRecoveredPaise": 79387619,
+      "shortfallPaise": 0,
+      "chargeAttempts": 29,
+      "wastedChargeAttempts": 10,
+      "contacts": 24,
+      "costPaise": 9300
+    },
+    {
+      "predicted": "TRANSACTION_LIMIT_EXCEEDED",
+      "trueCause": "OPAQUE_BANK_DECLINE",
+      "n": 10,
+      "recoveredPaise": 1006508,
+      "oracleRecoveredPaise": 1465246,
+      "shortfallPaise": 458738,
+      "chargeAttempts": 10,
+      "wastedChargeAttempts": 5,
+      "contacts": 7,
+      "costPaise": 3175
+    },
+    {
+      "predicted": "TRANSACTION_LIMIT_EXCEEDED",
+      "trueCause": "INSUFFICIENT_FUNDS",
+      "n": 2,
+      "recoveredPaise": 688805,
+      "oracleRecoveredPaise": 688805,
+      "shortfallPaise": 0,
+      "chargeAttempts": 2,
+      "wastedChargeAttempts": 1,
+      "contacts": 1,
+      "costPaise": 625
+    },
+    {
+      "predicted": "TRANSACTION_LIMIT_EXCEEDED",
+      "trueCause": "CUSTOMER_ABANDONED",
+      "n": 1,
+      "recoveredPaise": 0,
+      "oracleRecoveredPaise": 0,
+      "shortfallPaise": 0,
+      "chargeAttempts": 1,
+      "wastedChargeAttempts": 1,
+      "contacts": 1,
+      "costPaise": 325
+    },
+    {
+      "predicted": "TRANSACTION_LIMIT_EXCEEDED",
+      "trueCause": "AUTH_FAILED",
+      "n": 1,
+      "recoveredPaise": 692553,
+      "oracleRecoveredPaise": 692553,
+      "shortfallPaise": 0,
+      "chargeAttempts": 1,
+      "wastedChargeAttempts": 1,
+      "contacts": 1,
+      "costPaise": 325
+    }
+  ],
+  "llmComparison": {
+    "on": "agent",
+    "off": "agent_no_llm",
+    "recoveredOn": 615,
+    "recoveredOff": 509,
+    "recoveredPaiseOn": 261191844,
+    "recoveredPaiseOff": 225947817,
+    "correctOn": 935,
+    "correctOff": 955,
+    "classifiedTotal": 1100,
+    "wastedOn": 294,
+    "wastedOff": 121,
+    "chargeAttemptsOn": 902,
+    "chargeAttemptsOff": 612,
+    "llmHitRate": {
+      "calls": 319,
+      "total": 1100
+    }
+  },
+  "caveats": [
+    "The dataset is synthetic. Every number here is measured against `recoverableUnder`, a ground-truth oracle the generator derived from each record's true cause. See docs/EVAL-PLAN.md for how it was modelled.",
+    "Contact interventions are scored on a 72h response horizon, not on timing. That semantic choice accounts for roughly two thirds of the agent's recovery lift. See docs/DECISIONS.md, \"Contact interventions are scored on a response horizon\".",
+    "The salary-window retry rule targets the same 1st and last-working-day window the generator used to plant funds-arrival delays. Its measured benefit is partly an artefact of that shared assumption.",
+    "Downtime classes are structurally identifiable, not inferred: a burst of sibling failures with an identical gateway reason points straight at the cause. Downtime accuracy should not carry the headline.",
+    "The majority-class arm is scored with the same classifier kind and a confidence of 1, so cap-halving and the confidence floor behave exactly as they do in the agent arm. The only difference between the two arms is the predicted label.",
+    "A guardrail veto ends the payment rather than deferring the action past the blocking condition. A contact vetoed by QUIET_HOURS is therefore never re-attempted at 09:00. This is the orchestrator's behaviour, mirrored here, and it makes the agent's recovery number conservative.",
+    "Per-attempt and per-message costs are declared constants, not measurements."
+  ]
+}
