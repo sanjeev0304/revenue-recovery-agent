@@ -59,8 +59,8 @@ export class PrismaIngestRepo implements IngestRepo {
   }
 
   async applyChargeOutcome(payment: KnownPayment, outcome: ChargeOutcome): Promise<void> {
-    await prisma.$transaction(async (tx) => {
-      await tx.auditLog.create({
+    await prisma.$transaction([
+      prisma.auditLog.create({
         data: {
           paymentAttemptId: payment.id,
           event: 'outcome_recorded',
@@ -69,26 +69,14 @@ export class PrismaIngestRepo implements IngestRepo {
             status: outcome.status,
             source: outcome.source,
           }),
-          ruleFired: null,
-          reasoning: null,
           occurredAt: outcome.settledAt,
         },
-      })
-
-      await tx.paymentAttempt.update({
+      }),
+      prisma.paymentAttempt.update({
         where: { id: payment.id },
         data: { status: outcome.status === 'succeeded' ? 'recovered' : 'failed' },
-      })
-
-      await tx.action.updateMany({
-        where: { paymentAttemptId: payment.id, status: { in: ['executing', 'scheduled'] } },
-        data: {
-          status: outcome.status === 'succeeded' ? 'succeeded' : 'failed',
-          executedAt: outcome.settledAt,
-          outcome: asJson(outcome),
-        },
-      })
-    })
+      }),
+    ])
   }
 
   async ingestFailedPayment(input: IngestPaymentInput): Promise<KnownPayment> {

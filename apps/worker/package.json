@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "dotenv -e ../../.env -- tsx watch src/index.ts",
     "start": "dotenv -e ../../.env -- tsx src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "batch": "dotenv -e ../../.env -- tsx src/batch.ts"
   },
   "dependencies": {
     "@revenue/core": "^0.0.0",
