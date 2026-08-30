@@ -54,14 +54,23 @@ export const recoverabilityOracleSchema = z.object({
 
 export type RecoverabilityOracle = z.infer<typeof recoverabilityOracleSchema>
 
+export const CONTACT_RESPONSE_HORIZON_MS = 72 * 60 * 60 * 1000
+
 export function oracleAllows(
   oracle: RecoverabilityOracle,
   intervention: Intervention,
   failedAt: Date,
   attemptedAt: Date,
+  horizonMs: number = CONTACT_RESPONSE_HORIZON_MS,
 ): boolean {
   const outcome = oracle[intervention]
   if (!outcome.succeeds) return false
   if (outcome.afterMs === null) return false
-  return attemptedAt.getTime() - failedAt.getTime() >= outcome.afterMs
+
+  if (intervention === 'retry_charge') {
+    return attemptedAt.getTime() - failedAt.getTime() >= outcome.afterMs
+  }
+
+  const respondsAt = failedAt.getTime() + outcome.afterMs
+  return respondsAt <= attemptedAt.getTime() + horizonMs
 }

@@ -11,6 +11,7 @@ const envSchema = z.object({
   RAZORPAY_KEY_SECRET: z.string().min(1),
   RAZORPAY_WEBHOOK_SECRET: z.string().min(1),
   GEMINI_API_KEY: z.string().min(1),
+  GEMINI_MODEL: z.string().min(1).default('gemini-2.5-flash'),
   WARP_ORIGIN: z.coerce.date().optional(),
   WARP_FACTOR: z.coerce.number().positive().finite().optional(),
 })

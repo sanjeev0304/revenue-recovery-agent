@@ -23,7 +23,8 @@
     "db:generate": "npm run db:generate -w @revenue/db",
     "seed": "dotenv -e .env -- npm run seed -w @revenue/seed",
     "test:integration": "dotenv -e .env -- npx vitest run --config vitest.integration.config.ts",
-    "batch": "dotenv -e .env -- tsx apps/worker/src/batch.ts"
+    "batch": "dotenv -e .env -- tsx apps/worker/src/batch.ts",
+    "eval:dev": "dotenv -e .env -- tsx apps/worker/src/evalRun.ts"
   },
   "devDependencies": {
     "dotenv-cli": "^11.0.0",

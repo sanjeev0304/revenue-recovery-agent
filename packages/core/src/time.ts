@@ -6,7 +6,7 @@ export function addMs(at: Date, ms: number): Date {
   return new Date(at.getTime() + ms)
 }
 
-interface LocalParts {
+export interface LocalParts {
   year: number
   month: number
   day: number

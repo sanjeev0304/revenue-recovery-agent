@@ -62,6 +62,48 @@ production system it would — that is how failed payments enter. Here payments 
 through the batch importer, because creating records from arbitrary test-mode traffic would
 put rows with no ground-truth labels into the dataset the eval measures.
 
+## Contact interventions are scored on a response horizon, not on timing
+
+`oracleAllows` originally required every intervention to occur at or after the oracle's
+`afterMs` before it could succeed. That is correct for `retry_charge` — retrying before the
+customer's funds arrive genuinely fails, and the 18h floor on `INSUFFICIENT_FUNDS` depends
+on it. It was wrong for contact actions.
+
+A payment link issued at t=0 that the customer pays at t=5h was scored as a failure, because
+the *issuing* happened before the response window opened. That inverts the incentive: the
+playbook is supposed to issue the link promptly, and prompt issuing was the thing being
+penalised. `INSTRUMENT_INVALID` could never score at all — its oracle median is 9.6h while
+the playbook issues at t=0 and nudges at +1h.
+
+Contact actions now succeed if the customer's response moment, `failedAt + afterMs`, falls
+within `CONTACT_RESPONSE_HORIZON_MS` (72h) of the contact. A contact that arrives after the
+window already opened also succeeds, since the customer can act immediately. `retry_charge`
+keeps the strict rule unchanged.
+
+The 72h horizon is a declared modelling constant, not a measurement. It represents how long
+a payment link or nudge plausibly stays live in the customer's attention.
+
+**This raises the headline number and the change is visible, not absorbed.** On the 1100
+record train split, with the LLM off in both runs so only the semantics differ:
+
+| | before | after |
+|---|---|---|
+| recovered | 315/1100 (28.6%) | 509/1100 (46.3%) |
+| INSTRUMENT_INVALID | 0/77 (0%) | 33/77 (43%) |
+| CUSTOMER_ABANDONED | 34/220 (15%) | 139/220 (63%) |
+| AUTH_FAILED | 30/143 (21%) | 82/143 (57%) |
+| INSUFFICIENT_FUNDS | 124/209 (59%) | 128/209 (61%) |
+| GATEWAY_DOWNTIME | 46/68 (68%) | 46/68 (68%) |
+
+The two pure-retry causes are bit-identical before and after, which is the check that the
+change is scoped to contacts. `INSUFFICIENT_FUNDS` moves by four records because its
+playbook ends in a nudge, so it is partly contact-driven; that is the expected shape of the
+change rather than leakage into the retry rule.
+
+Nearly two thirds of the headline lift comes from this one semantic change. Anyone reading
+the recovery number should know that, which is why it is recorded with figures rather than
+described.
+
 ## Razorpay Subscriptions were investigated and rejected
 
 Subscriptions looked like the one path to a genuinely closed loop in test mode: our agent
