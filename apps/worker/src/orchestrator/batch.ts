@@ -152,18 +152,16 @@ export async function runBatch(options: BatchOptions): Promise<BatchReport> {
 
       if (!decision.guardrailVerdict.allowed) {
         report.vetoed++
-        await retryTransient('executeVeto', () =>
-          executeDecision(
-            { store, executors },
-            {
-              paymentAttemptId: row.id,
-              decision,
-              amountPaise: loaded.amountPaise,
-              method: loaded.method,
-              failedAt: loaded.failedAt,
-              occurredAt: now,
-            },
-          ),
+        await executeDecision(
+          { store, executors },
+          {
+            paymentAttemptId: row.id,
+            decision,
+            amountPaise: loaded.amountPaise,
+            method: loaded.method,
+            failedAt: loaded.failedAt,
+            occurredAt: now,
+          },
         )
         break
       }
@@ -178,18 +176,16 @@ export async function runBatch(options: BatchOptions): Promise<BatchReport> {
       if (action.type === 'send_nudge') report.contacts++
       if (action.type === 'escalate') report.escalated++
 
-      await retryTransient('executeAction', () =>
-        executeDecision(
-          { store, executors },
-          {
-            paymentAttemptId: row.id,
-            decision,
-            amountPaise: loaded.amountPaise,
-            method: loaded.method,
-            failedAt: loaded.failedAt,
-            occurredAt: at,
-          },
-        ),
+      await executeDecision(
+        { store, executors },
+        {
+          paymentAttemptId: row.id,
+          decision,
+          amountPaise: loaded.amountPaise,
+          method: loaded.method,
+          failedAt: loaded.failedAt,
+          occurredAt: at,
+        },
       )
 
       const after = await retryTransient('statusCheck', () =>

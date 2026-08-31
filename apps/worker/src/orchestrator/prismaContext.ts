@@ -13,6 +13,7 @@ import {
 } from '@revenue/core'
 import type { DecisionContext } from './handler.js'
 import type { ExecutionStore } from './execute.js'
+import { retryTransient } from './retry.js'
 
 const asJson = (v: unknown): Prisma.InputJsonValue => (v ?? Prisma.JsonNull) as Prisma.InputJsonValue
 
@@ -170,10 +171,25 @@ export class PrismaExecutionStore implements ExecutionStore {
     decision: Decision
     occurredAt: Date
   }): Promise<{ actionId: string; auditId: string }> {
+    const existing = await retryTransient('openAction.lookup', () =>
+      prisma.action.findUnique({
+        where: { idempotencyKey: input.idempotencyKey },
+        select: { id: true, auditLogs: { select: { id: true }, take: 1 } },
+      }),
+    )
+
+    if (existing !== null) {
+      return {
+        actionId: existing.id,
+        auditId: existing.auditLogs[0]?.id ?? randomUUID(),
+      }
+    }
+
     const actionId = randomUUID()
     const auditId = randomUUID()
 
-    await prisma.$transaction([
+    await retryTransient('openAction', () =>
+      prisma.$transaction([
       prisma.action.create({
         data: {
           id: actionId,
@@ -202,7 +218,8 @@ export class PrismaExecutionStore implements ExecutionStore {
           occurredAt: input.occurredAt,
         },
       }),
-    ])
+      ]),
+    )
 
     return { actionId, auditId }
   }
@@ -213,7 +230,8 @@ export class PrismaExecutionStore implements ExecutionStore {
     result: ExecutionResult
     occurredAt: Date
   }): Promise<void> {
-    await prisma.$transaction([
+    await retryTransient('closeAction', () =>
+      prisma.$transaction([
       prisma.action.update({
         where: { id: input.actionId },
         data: {
@@ -226,7 +244,8 @@ export class PrismaExecutionStore implements ExecutionStore {
         where: { id: input.auditId },
         data: { reasoning: JSON.stringify(input.result).slice(0, 2000) },
       }),
-    ])
+      ]),
+    )
   }
 
   async recordVeto(input: {
@@ -239,10 +258,12 @@ export class PrismaExecutionStore implements ExecutionStore {
     const action = input.decision.proposedAction
     if (action === null) return
 
-    const existing = await prisma.action.findUnique({
-      where: { idempotencyKey: action.idempotencyKey },
-      select: { id: true },
-    })
+    const existing = await retryTransient('recordVeto.lookup', () =>
+      prisma.action.findUnique({
+        where: { idempotencyKey: action.idempotencyKey },
+        select: { id: true },
+      }),
+    )
 
     const actionId = existing?.id ?? randomUUID()
 
@@ -280,7 +301,7 @@ export class PrismaExecutionStore implements ExecutionStore {
       }),
     )
 
-    await prisma.$transaction(writes)
+    await retryTransient('recordVeto', () => prisma.$transaction(writes))
   }
 }
 

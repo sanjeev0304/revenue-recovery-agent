@@ -62,6 +62,27 @@ production system it would — that is how failed payments enter. Here payments 
 through the batch importer, because creating records from arbitrary test-mode traffic would
 put rows with no ground-truth labels into the dataset the eval measures.
 
+## Transient retries belong inside each write, not around the composite
+
+Five records in the full train batch errored and left an `Action` row stuck in `executing`.
+Each had exactly one action, and its audit row still carried the pre-execution reasoning
+rather than the result, so `closeAction` had never run. Two of the five were already
+`recovered`, which places the failure after the executor succeeded.
+
+The cause was retry granularity. `retryTransient` wrapped the whole of `executeDecision`,
+which is not idempotent: `openAction` creates a row with a unique `idempotencyKey`. A
+transient Neon disconnect during `closeAction` therefore retried the entire sequence,
+`openAction` raised P2002 on the key it had just written, P2002 is correctly classified as
+non-transient, and the record was abandoned mid-flight.
+
+Retries now sit inside each store operation, so a failed `closeAction` retries only
+`closeAction`. `openAction` additionally returns the existing row instead of colliding, so
+the composite is idempotent even if something above it does retry.
+
+The five stuck rows were closed out as `failed` with an `orphaned` outcome rather than
+deleted, since an audit trail that quietly loses its failures is worse than one that records
+them.
+
 ## QUIET_HOURS defers a contact rather than cancelling it
 
 The guardrail vetoed any nudge falling between 21:00 and 09:00 customer-local, and a veto
