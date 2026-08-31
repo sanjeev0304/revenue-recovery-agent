@@ -19,9 +19,12 @@ const options = {
   maxSteps: arg('max-steps', 6),
   warpFactor: arg('warp-factor', 3600),
   reset: process.argv.includes('--reset'),
+  llm: !process.argv.includes('--no-llm'),
 }
 
-console.log(`headless batch: train split, limit ${options.limit}, concurrency ${options.concurrency}`)
+console.log(
+  `headless batch: train split, limit ${options.limit}, concurrency ${options.concurrency}, llm=${options.llm ? (process.env['GEMINI_MODEL'] ?? 'gemini-2.5-flash') : 'off'}`,
+)
 const started = Date.now()
 
 try {
@@ -37,6 +40,16 @@ try {
   console.log(`escalated        ${report.escalated}`)
   console.log(`vetoed           ${report.vetoed}`)
   console.log(`errored          ${report.failed.length}`)
+  for (const f of report.failed) {
+    console.log(`  ${f.paymentId}  ${f.error}`)
+  }
+  if (report.llmModel !== null) {
+    console.log('')
+    console.log(`llm model        ${report.llmModel}`)
+    console.log(`  API calls      ${report.llmCalls}`)
+    console.log(`  cache hits     ${report.llmCacheHits}`)
+    console.log(`  parse failures ${report.llmParseFailures}`)
+  }
   console.log('')
   console.log('by true cause:')
   for (const [cause, v] of Object.entries(report.byCause).sort()) {

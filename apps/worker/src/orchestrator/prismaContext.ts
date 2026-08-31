@@ -37,7 +37,12 @@ export function stubDiagnosis(facts: PaymentFacts): Diagnosis {
   })
 }
 
-export async function loadContext(paymentAttemptId: string): Promise<LoadedPayment | null> {
+export type Diagnoser = (facts: PaymentFacts) => Promise<Diagnosis>
+
+export async function loadContext(
+  paymentAttemptId: string,
+  diagnose?: Diagnoser,
+): Promise<LoadedPayment | null> {
   const row = await prisma.paymentAttempt.findUnique({
     where: { id: paymentAttemptId },
     include: { customer: true, diagnosis: true },
@@ -62,7 +67,9 @@ export async function loadContext(paymentAttemptId: string): Promise<LoadedPayme
 
   const diagnosis: Diagnosis =
     row.diagnosis === null
-      ? stubDiagnosis(facts)
+      ? diagnose === undefined
+        ? stubDiagnosis(facts)
+        : await diagnose(facts)
       : {
           rootCause: row.diagnosis.rootCause,
           confidence: row.diagnosis.confidence,
@@ -118,6 +125,7 @@ export async function persistDecision(input: {
   decision: Decision
   occurredAt: Date
   paymentAttemptId: string
+  llmModel?: string
 }): Promise<void> {
   const { decision } = input
 
@@ -129,6 +137,9 @@ export async function persistDecision(input: {
       confidence: decision.confidence,
       classifier: decision.classifier,
       evidence: decision.evidence,
+      ...(decision.classifier === 'llm' && input.llmModel !== undefined
+        ? { llmModel: input.llmModel }
+        : {}),
     },
     update: {},
   })

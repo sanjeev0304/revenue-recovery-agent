@@ -174,3 +174,32 @@ Prisma 7 removed `url = env("DATABASE_URL")` from the schema and requires a
 `prisma.config.ts` plus a driver adapter. That contradicts the `prisma db push` workflow
 `DATA-MODEL.md` documents. Pinned to 6 for the build window; a later migration is a known
 cost.
+
+## The board derives its display status from actions, not from PaymentAttempt.status
+
+The recovery board's status column and its header counters do not read
+`PaymentAttempt.status`. They derive a display status from the payment's `Action` rows:
+
+- `recovered` — `PaymentAttempt.status` is `recovered`
+- `escalated` — a succeeded `escalate` action exists
+- `in_progress` — any action or diagnosis exists and neither of the above holds
+- `failed` — untouched by the agent
+
+This is a workaround, not a design. The orchestrator only ever writes two payment
+statuses: `recovered`, in `PrismaIngestRepo` when a charge outcome succeeds, and `failed`,
+in `resetBatchState`. Nothing anywhere writes `in_progress`, `escalated`, or `abandoned`.
+Read literally, the board's in-progress and escalated counters would sit at zero forever,
+and a row would jump from `failed` straight to `recovered` with no intermediate state for
+the time-warp demo to show — which is the one thing that screen exists to do.
+
+The derivation is faithful to what actually happened: an escalation really is a succeeded
+`escalate` action, and a payment with actions against it really is in progress. It needs no
+backend change and it cannot drift, because it reads the same rows the timeline renders.
+
+**The honest fix is worker-side and is not done.** `PaymentAttempt.status` should be a real
+state machine driven by the orchestrator: `in_progress` when the first action is scheduled,
+`escalated` when an escalate action executes, `abandoned` when a playbook exhausts with
+terminal `stop` and nothing recovered. Until that exists, the enum in the Prisma schema
+claims five states the system never reaches, and any consumer other than this dashboard —
+a query, an export, an alert — would read those columns and get a wrong answer. The
+dashboard papering over it does not make the column correct.

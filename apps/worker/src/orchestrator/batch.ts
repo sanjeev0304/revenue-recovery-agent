@@ -12,6 +12,8 @@ import {
   SendNudgeExecutor,
 } from '../executors/simulated.js'
 import { SimulatedAdapter } from '../adapters/simulated.js'
+import { createDiagnoser } from '../llm/diagnose.js'
+import { GeminiProvider } from '../llm/gemini.js'
 import { executeDecision } from './execute.js'
 import { retryTransient } from './retry.js'
 import {
@@ -29,6 +31,7 @@ export interface BatchOptions {
   maxSteps: number
   warpFactor: number
   reset: boolean
+  llm: boolean
 }
 
 export interface BatchReport {
@@ -42,6 +45,10 @@ export interface BatchReport {
   contacts: number
   byCause: Record<string, { total: number; recovered: number }>
   failed: Array<{ paymentId: string; error: string }>
+  llmModel: string | null
+  llmCalls: number
+  llmCacheHits: number
+  llmParseFailures: number
 }
 
 export async function runBatch(options: BatchOptions): Promise<BatchReport> {
@@ -61,6 +68,19 @@ export async function runBatch(options: BatchOptions): Promise<BatchReport> {
       await resetBatchState(rows.slice(i, i + 200).map((r) => r.id))
     }
   }
+
+  const apiKey = process.env['GEMINI_API_KEY'] ?? ''
+  const modelName = process.env['GEMINI_MODEL'] ?? 'gemini-2.5-flash'
+
+  if (options.llm && apiKey === '') {
+    throw new Error('GEMINI_API_KEY is not set; re-run with --no-llm to use the stub')
+  }
+
+  const provider = options.llm
+    ? new GeminiProvider({ apiKey, model: modelName })
+    : null
+  const { diagnose, stats } = createDiagnoser({ provider })
+  const diagnoser = options.llm ? diagnose : undefined
 
   const repo = new PrismaIngestRepo()
   const store = new PrismaExecutionStore()
@@ -91,6 +111,10 @@ export async function runBatch(options: BatchOptions): Promise<BatchReport> {
     contacts: 0,
     byCause: {},
     failed: [],
+    llmModel: options.llm ? modelName : null,
+    llmCalls: 0,
+    llmCacheHits: 0,
+    llmParseFailures: 0,
   }
 
   async function processOne(row: (typeof rows)[number]): Promise<void> {
@@ -101,21 +125,26 @@ export async function runBatch(options: BatchOptions): Promise<BatchReport> {
     report.totalPaise += row.amountPaise
 
     let cursor = 0
-    const loaded0 = await retryTransient('loadContext', () => loadContext(row.id))
+    const loaded0 = await retryTransient('loadContext', () => loadContext(row.id, diagnoser))
     if (loaded0 === null) return
 
     const clock = new WarpedClock(loaded0.failedAt, 1, () => cursor)
     let recovered = false
 
     for (let step = 0; step < options.maxSteps; step++) {
-      const loaded = await retryTransient('loadContext', () => loadContext(row.id))
+      const loaded = await retryTransient('loadContext', () => loadContext(row.id, diagnoser))
       if (loaded === null) break
 
       const now = clock.now()
       const decision = decide({ ...loaded.context, now })
 
       await retryTransient('persistDecision', () =>
-        persistDecision({ decision, occurredAt: now, paymentAttemptId: row.id }),
+        persistDecision({
+          decision,
+          occurredAt: now,
+          paymentAttemptId: row.id,
+          ...(options.llm ? { llmModel: modelName } : {}),
+        }),
       )
 
       const action = decision.proposedAction
@@ -200,6 +229,10 @@ export async function runBatch(options: BatchOptions): Promise<BatchReport> {
     }
   })
   await Promise.all(workers)
+
+  report.llmCalls = stats.apiCalls
+  report.llmCacheHits = stats.cacheHits
+  report.llmParseFailures = stats.parseFailures
 
   return report
 }
