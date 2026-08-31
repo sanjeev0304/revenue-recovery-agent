@@ -1,6 +1,6 @@
 import { prisma } from '@revenue/db'
-import type { ChargeOutcome, ExecutorRegistry } from '@revenue/core'
-import { decide } from '@revenue/core'
+import type { ChargeOutcome, ExecutorRegistry, RootCause } from '@revenue/core'
+import { decide, localHour, recoverabilityOracleSchema } from '@revenue/core'
 import { WarpedClock } from '../clock.js'
 import { PrismaIngestRepo } from '../ingest/prismaRepo.js'
 import { recordChargeOutcome } from '../ingest/recordChargeOutcome.js'
@@ -51,21 +51,109 @@ export interface BatchReport {
   llmParseFailures: number
 }
 
+interface SliceCandidate {
+  id: string
+  razorpayPaymentId: string
+  amountPaise: number
+  syntheticTrueCause: RootCause | null
+  failedAt: Date
+  recoverableUnder: unknown
+  customer: { timezone: string }
+}
+
+const CONTACT_BEARING: readonly RootCause[] = [
+  'CUSTOMER_ABANDONED',
+  'AUTH_FAILED',
+  'INSTRUMENT_INVALID',
+  'TRANSACTION_LIMIT_EXCEEDED',
+]
+
+function recoversOnLaterRetry(candidate: SliceCandidate): boolean {
+  const parsed = recoverabilityOracleSchema.safeParse(candidate.recoverableUnder)
+  if (!parsed.success) return false
+  const retry = parsed.data.retry_charge
+  return retry.succeeds && retry.afterMs !== null && retry.afterMs > 18 * 3_600_000
+}
+
+function nudgeWouldDefer(candidate: SliceCandidate): boolean {
+  if (!CONTACT_BEARING.includes(candidate.syntheticTrueCause ?? 'UNKNOWN')) return false
+  const nudgeAt = new Date(candidate.failedAt.getTime() + 2 * 3_600_000)
+  const hour = localHour(nudgeAt, candidate.customer.timezone)
+  return hour >= 21 || hour < 9
+}
+
+export function selectDemoSlice(
+  candidates: readonly SliceCandidate[],
+  limit: number,
+): SliceCandidate[] {
+  const chosen = new Map<string, SliceCandidate>()
+
+  const take = (pool: readonly SliceCandidate[], count: number): void => {
+    for (const c of pool) {
+      if (chosen.size >= limit) return
+      if (chosen.has(c.id)) continue
+      chosen.set(c.id, c)
+      if (--count <= 0) return
+    }
+  }
+
+  take(candidates.filter((c) => c.syntheticTrueCause === 'RISK_DECLINE'), 10)
+  take(
+    candidates.filter(
+      (c) => c.syntheticTrueCause === 'INSUFFICIENT_FUNDS' && recoversOnLaterRetry(c),
+    ),
+    30,
+  )
+  take(candidates.filter(nudgeWouldDefer), 25)
+  take(candidates.filter((c) => c.syntheticTrueCause === 'TECHNICAL_UNRESOLVED'), 5)
+  take(candidates.filter((c) => c.syntheticTrueCause === 'OPAQUE_BANK_DECLINE'), 30)
+
+  const byCause = new Map<string, SliceCandidate[]>()
+  for (const c of candidates) {
+    const key = c.syntheticTrueCause ?? 'UNKNOWN'
+    byCause.set(key, [...(byCause.get(key) ?? []), c])
+  }
+
+  const causes = [...byCause.keys()].sort()
+  let guard = 0
+  while (chosen.size < limit && guard < limit * 4) {
+    for (const cause of causes) {
+      if (chosen.size >= limit) break
+      take(byCause.get(cause) ?? [], 1)
+    }
+    guard++
+  }
+
+  return [...chosen.values()].sort((a, b) =>
+    a.razorpayPaymentId.localeCompare(b.razorpayPaymentId),
+  )
+}
+
 export async function runBatch(options: BatchOptions): Promise<BatchReport> {
   if (options.split !== 'train') {
     throw new Error('runBatch may only touch the train split; the holdout is frozen')
   }
 
-  const rows = await prisma.paymentAttempt.findMany({
+  const all = await prisma.paymentAttempt.findMany({
     where: { evalSplit: 'train', isSynthetic: true },
-    orderBy: { failedAt: 'asc' },
-    take: options.limit,
-    select: { id: true, razorpayPaymentId: true, amountPaise: true, syntheticTrueCause: true },
+    orderBy: { razorpayPaymentId: 'asc' },
+    select: {
+      id: true,
+      razorpayPaymentId: true,
+      amountPaise: true,
+      syntheticTrueCause: true,
+      failedAt: true,
+      recoverableUnder: true,
+      customer: { select: { timezone: true } },
+    },
   })
 
+  const rows = selectDemoSlice(all, options.limit)
+
   if (options.reset) {
-    for (let i = 0; i < rows.length; i += 200) {
-      await resetBatchState(rows.slice(i, i + 200).map((r) => r.id))
+    const everyTrainId = all.map((r) => r.id)
+    for (let i = 0; i < everyTrainId.length; i += 200) {
+      await resetBatchState(everyTrainId.slice(i, i + 200))
     }
   }
 

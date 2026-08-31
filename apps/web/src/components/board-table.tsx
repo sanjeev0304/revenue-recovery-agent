@@ -162,8 +162,28 @@ export function BoardTable({ initial }: { initial: Board }) {
 
   const c = board.counters
 
+  const processed = c.total - c.failed
+
   return (
     <main className="px-4 pb-16">
+      <section className="border-b border-dashed px-0 pt-4 pb-3">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="label text-accent">demo run</span>
+          <span className="text-sm text-dim">
+            Live state from the last{' '}
+            <code className="num text-faint">npm run batch</code> over{' '}
+            <span className="num text-text">{processed}</span> of{' '}
+            <span className="num text-text">{c.total}</span> train records. These counters
+            move as a warped run executes and are <strong className="text-text">not</strong>{' '}
+            the measured result.
+          </span>
+        </div>
+        <p className="mt-1 text-xs text-faint">
+          The measured numbers are on the metrics page: all 1100 train records, one pinned
+          reproducible eval run. Nothing here is the submitted figure.
+        </p>
+      </section>
+
       <section className="flex items-end gap-10 border-b py-4">
         <Counter
           label="recovered"
