@@ -21,6 +21,7 @@
     "db:push": "npm run db:push -w @revenue/db",
     "db:studio": "npm run db:studio -w @revenue/db",
     "db:generate": "npm run db:generate -w @revenue/db",
+    "postinstall": "prisma generate --schema=packages/db/prisma/schema.prisma",
     "seed": "dotenv -e .env -- npm run seed -w @revenue/seed",
     "eval": "dotenv -e .env -- npm run eval -w @revenue/eval --",
     "test:integration": "dotenv -e .env -- npx vitest run --config vitest.integration.config.ts",

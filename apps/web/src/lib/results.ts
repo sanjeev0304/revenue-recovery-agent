@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { z } from 'zod'
@@ -113,7 +114,19 @@ export type ResultsState =
   | { kind: 'invalid'; error: string }
 
 export async function loadResults(): Promise<ResultsState> {
-  const path = resolve(process.cwd(), '../../docs/results.json')
+  const candidates = [
+    resolve(process.cwd(), '../../docs/results.json'),
+    resolve(process.cwd(), 'docs/results.json'),
+    resolve(process.cwd(), '../../../docs/results.json'),
+  ]
+
+  let path = candidates[0]!
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      path = candidate
+      break
+    }
+  }
 
   let raw: string
   try {
