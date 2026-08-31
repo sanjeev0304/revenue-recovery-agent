@@ -1,5 +1,5 @@
 import { prisma } from '@revenue/db'
-import { PLAYBOOKS } from '@revenue/core'
+import { PERMANENT_FAILURE_CAUSES, PLAYBOOKS } from '@revenue/core'
 import type { ActionStatus, ActionType, AuditEvent, RootCause } from '@revenue/core'
 
 export interface TimelineAction {
@@ -36,6 +36,53 @@ export interface PlaybookView {
   steps: { action: string; detail: string }[]
 }
 
+export interface NoChargeNote {
+  kind: 'permanent_failure' | 'customer_present' | 'unresolved_cause'
+  guardrail: 'PERMANENT_FAILURE_BLOCK' | null
+  headline: string
+  detail: string
+}
+
+export function noChargeNoteFor(cause: RootCause): NoChargeNote | null {
+  const pb = PLAYBOOKS[cause]
+  if (pb.maxRetries > 0) return null
+
+  if (PERMANENT_FAILURE_CAUSES.includes(cause)) {
+    return {
+      kind: 'permanent_failure',
+      guardrail: 'PERMANENT_FAILURE_BLOCK',
+      headline: `No charge was proposed for ${cause}.`,
+      detail:
+        'The playbook for this cause contains no retry step, so the chain goes straight to its ' +
+        'terminal action. PERMANENT_FAILURE_BLOCK would veto a charge retry on this cause if one ' +
+        'were ever proposed, but it does not appear below because there was nothing to veto. It ' +
+        'is a backstop against a future playbook change, not a step that runs here.',
+    }
+  }
+
+  if (cause === 'UNKNOWN') {
+    return {
+      kind: 'unresolved_cause',
+      guardrail: null,
+      headline: 'No charge was proposed, because the root cause was never determined.',
+      detail:
+        'The classifier could not resolve this failure and the model was either unavailable or ' +
+        'below the confidence floor, so the policy engine escalates without acting rather than ' +
+        'running a playbook on a guess. No guardrail was involved.',
+    }
+  }
+
+  return {
+    kind: 'customer_present',
+    guardrail: null,
+    headline: `No charge was proposed for ${cause}.`,
+    detail:
+      'This cause needs the customer present to complete the payment, so a silent retry cannot ' +
+      'succeed and the playbook does not attempt one. No guardrail was involved: the policy ' +
+      'engine never proposed a charge to block.',
+  }
+}
+
 export interface PaymentTimeline {
   id: string
   razorpayPaymentId: string
@@ -63,6 +110,7 @@ export interface PaymentTimeline {
     createdAt: Date
   } | null
   playbook: PlaybookView | null
+  noChargeNote: NoChargeNote | null
   actions: TimelineAction[]
   logs: TimelineLog[]
 }
@@ -146,6 +194,8 @@ export async function loadTimeline(id: string): Promise<PaymentTimeline | null> 
             createdAt: row.diagnosis.createdAt,
           },
     playbook: row.diagnosis === null ? null : playbookFor(row.diagnosis.rootCause),
+    noChargeNote:
+      row.diagnosis === null ? null : noChargeNoteFor(row.diagnosis.rootCause),
     actions: row.actions,
     logs: row.auditLogs,
   }

@@ -62,6 +62,33 @@ production system it would — that is how failed payments enter. Here payments 
 through the batch importer, because creating records from arbitrary test-mode traffic would
 put rows with no ground-truth labels into the dataset the eval measures.
 
+## PERMANENT_FAILURE_BLOCK is a backstop and never fires in a real run
+
+The `RISK_DECLINE` playbook contains no steps and terminates in `escalate`, so the policy
+engine never proposes a charge for it. `PERMANENT_FAILURE_BLOCK` can only veto a charge that
+was proposed, so on a real run it has nothing to act on. Across a 300 record demo slice
+containing 30 risk declines, every one produced a single `escalate:succeeded` action and
+zero vetoes; the only vetoes in the whole run were `COOLDOWN` (3) and `OPT_OUT` (4).
+
+This is the design working, not a gap. The playbook refuses first and the guardrail stands
+behind it, which is what defence in depth means. The guardrail is unit-tested directly —
+including that it wins over `GLOBAL_ATTEMPT_CAP` when both would fire — and those tests are
+what demonstrate it, not the demo. It exists to catch a future playbook change that
+introduces a retry step for a permanently failed cause, and it costs nothing to keep.
+
+The consequence for the demo is that **there is no veto to show on a risk decline**, and no
+veto should be manufactured to create one. Instead the per-payment timeline states why the
+chain goes straight to escalate: that the playbook proposed no charge, and that
+`PERMANENT_FAILURE_BLOCK` would veto one if it ever did. A reader sees reasoning rather than
+an unexplained gap.
+
+The same note is derived per cause rather than hardcoded, because the reason for proposing
+no charge differs. `RISK_DECLINE`, `INSTRUMENT_INVALID` and `TECHNICAL_UNRESOLVED` are
+permanent failures the guardrail covers. `AUTH_FAILED` and `CUSTOMER_ABANDONED` propose no
+charge because the customer must be present, and no guardrail is involved at all. `UNKNOWN`
+proposes nothing because the cause was never determined. Telling a reader that
+`PERMANENT_FAILURE_BLOCK` was relevant to an `AUTH_FAILED` payment would be false.
+
 ## The eval replays a pinned LLM cache
 
 Gemini at `temperature: 0` is not deterministic. Three eval runs over identical code and

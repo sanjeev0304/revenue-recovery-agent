@@ -269,6 +269,18 @@ export function Timeline({ payment }: { payment: PaymentTimeline }) {
                 ))}
               </ol>
             )}
+
+            {payment.noChargeNote !== null && (
+              <div className="mt-3 border-l-2 border-l-esc bg-surface px-3 py-2">
+                <p className="text-xs text-text">{payment.noChargeNote.headline}</p>
+                <p className="mt-1 text-xs text-dim">{payment.noChargeNote.detail}</p>
+                {payment.noChargeNote.guardrail !== null && (
+                  <p className="num mt-1.5 text-xs text-faint">
+                    {payment.noChargeNote.guardrail} — not fired, nothing to veto
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
       </Stage>
