@@ -3,6 +3,7 @@ import {
   type ClassifierKind,
   type Diagnosis,
   type EvalArm,
+  type LlmDiagnosis,
   type RootCause,
 } from '@revenue/core'
 import { createDiagnoser, GeminiProvider, type DiagnoseStats } from '@revenue/worker/llm'
@@ -65,13 +66,16 @@ export async function runAgentArm(options: {
   apiKey: string
   model: string
   maxSteps: number
+  cache?: Map<string, LlmDiagnosis>
   onProgress?: (done: number, total: number) => void
 }): Promise<ArmResult> {
   const provider = options.llmEnabled
     ? new GeminiProvider({ apiKey: options.apiKey, model: options.model })
     : null
 
-  const { diagnose, stats } = createDiagnoser({ provider })
+  const { diagnose, stats } = createDiagnoser(
+    options.cache === undefined ? { provider } : { provider, cache: options.cache },
+  )
   const ctx = newContext(options.maxSteps)
   const results: RecordResult[] = []
 

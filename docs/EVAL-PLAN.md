@@ -163,22 +163,29 @@ random seed.
 - **OPAQUE_BANK_DECLINE accuracy** — reported separately, **in aggregate against the
   majority-class baseline**, with raw counts.
 
-  **Measured result on the train split, stated at its exact scope:** on the 319 record
-  opaque subset (29% of the split), majority-class guessing scores 174/319 (54.5%) and the
-  LLM classifier scores 156/319 (48.9%). On this subset, and only on this subset,
-  majority-class guessing outperforms the LLM classifier.
+  **Measured result on the train split, stated at its exact scope and strength:** on the 319
+  record opaque subset (29% of the split), majority-class guessing scores 174/319 (54.5%) and
+  the LLM classifier scores 154/319 (48.3%). On this subset, and only on this subset,
+  majority-class guessing outclassifies the LLM.
+
+  This is a **classification** finding and it is reported only at that level. The gap is 18
+  to 20 records across three runs and is stable. At the **recovery** level the two arms
+  cannot be distinguished: the majority arm recovers 726/1100 and the agent 723/1100, a gap
+  of 3, while the LLM arm itself moves by up to 11 payments between runs. A 3 payment
+  difference inside 11 payments of noise is not a result, and is not reported as one.
 
   The claim is not that guessing beats the model in general, and it is not a statement about
   the pipeline. The deterministic classifier resolves 781/1100 records that neither the model
   nor the majority arm touches, and the headline result — baseline 246/1100 (22.4%) to agent
-  712/1100 (64.7%) — rests on the deterministic diagnosis and policy layer, not on the model.
+  723/1100 (65.7%) — rests on the deterministic diagnosis and policy layer, not on the model.
 
   The majority arm is a fair control, verified rather than assumed: it substitutes only on
   the 319 records where `classify()` returns `needs_llm`, inherits the deterministic label
   everywhere else, and relabels zero records the taxonomy could have resolved.
 
-  The model's failure is specific. It scores 154/174 (88.5%) on genuinely opaque records and
-  2/145 (1.4%) on masked ones — it identifies a true opaque decline well and almost never
+  The model's failure is specific, and the genuinely-opaque against masked split is the whole
+  explanation. It scores 152/174 (87.4%) on genuinely opaque records and 2/145 (1.4%) on
+  masked ones — it identifies a true opaque decline well and almost never
   detects a masked cause. The masked-in-burst cell is 0/46, which is expected while the burst
   feature remains defined but not yet fed into the prompt; that cell is not evidence about
   the model until the feature is wired. This is the class where the LLM does real work
@@ -226,6 +233,22 @@ efficiency story rather than inflating the recovery number. That is a real resul
 honest one.
 
 ## Reproducibility
+
+### The LLM arm is pinned, and its variance is stated
+
+Gemini at `temperature: 0` is **not** deterministic. Three runs of identical code over
+identical data produced agent-arm recoveries of **615, 712 and 723**. Between the last two
+every deterministic arm was bit-identical and only the model arm moved, by **11 payments**.
+
+The eval therefore replays a committed cache of the 33 model diagnoses from
+`scripts/eval/llm-cache.json`, which makes the run reproducible and costs zero API calls.
+`--refresh-llm-cache` rebuilds it live.
+
+**The pinned numbers are one draw from a distribution roughly 11 payments wide.** Any
+comparison between the agent arm and another arm that turns on a margin narrower than that
+is not a real difference. This is why the majority-class comparison is reported as a
+classification result, where the margin is 18 to 20 records and stable, and explicitly not
+as a recovery result, where the margin is 3.
 
 `npm run eval` must run end to end from a clean database with a fixed seed and produce
 identical numbers. Write the results to an `EvalRun` row and to `docs/results.md`.

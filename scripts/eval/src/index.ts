@@ -4,6 +4,7 @@ import { prisma } from '@revenue/db'
 import type { EvalSplit } from '@revenue/core'
 import { COST_ASSUMPTIONS } from './cost.js'
 import { loadRecords } from './load.js'
+import { CACHE_PATH, loadLlmCache, saveLlmCache } from './llmCache.js'
 import {
   runAgentArm,
   runBaselineArm,
@@ -81,7 +82,17 @@ try {
     maxSteps,
   })
 
+  const refreshCache = flag('refresh-llm-cache')
+  const cache = refreshCache
+    ? { map: new Map(), existed: false, entriesOnDisk: 0, modelOnDisk: null }
+    : loadLlmCache(model)
+
   console.log(`arm 3/5  agent, LLM on (${model})`)
+  console.log(
+    cache.existed
+      ? `         replaying ${cache.entriesOnDisk} cached diagnoses from scripts/eval/llm-cache.json`
+      : `         no cache on disk${refreshCache ? ' (refresh requested)' : ''}, calling the model`,
+  )
   let lastLogged = 0
   const agent = await runAgentArm({
     records,
@@ -89,6 +100,7 @@ try {
     apiKey,
     model,
     maxSteps,
+    cache: cache.map,
     onProgress: (done, total) => {
       if (done - lastLogged >= 100 || done === total) {
         lastLogged = done
@@ -97,6 +109,11 @@ try {
       }
     },
   })
+
+  saveLlmCache(model, cache.map)
+  console.log(
+    `         cache now holds ${cache.map.size} diagnoses; ${agent.diagnosisStats?.apiCalls ?? 0} live API calls this run`,
+  )
 
   console.log('arm 4/5  majority class')
   const majorityArm = runMajorityClassArm(records, majority.cause, maxSteps)

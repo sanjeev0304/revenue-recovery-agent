@@ -1,0 +1,170 @@
+{
+  "model": "gemini-2.5-flash",
+  "entries": {
+    "card|card_declined|bank|payment_authentication": {
+      "rootCause": "AUTH_FAILED",
+      "confidence": 0.7,
+      "reasoning": "The gateway reason 'card_declined' from the bank at the 'payment_authentication' step strongly suggests an authentication failure, as the bank declined the card during the authentication process."
+    },
+    "card|card_declined|bank|payment_authorization": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.7,
+      "reasoning": "The gateway indicated 'card_declined' from the bank during payment authorization. Without further details from the bank, the specific reason for the decline remains opaque, making OPAQUE_BANK_DECLINE the most appropriate classification."
+    },
+    "card|card_declined|bank|payment_initiation": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.7,
+      "reasoning": "The gateway reason 'card_declined' from the 'bank' source, especially after multiple prior attempts with the same reason, strongly suggests the bank is declining the transaction without providing a specific reason. While it could be insufficient funds or a limit, without more information, 'OPAQUE_BANK_DECLINE' is the most accurate classification."
+    },
+    "card|card_declined|gateway|payment_authentication": {
+      "rootCause": "AUTH_FAILED",
+      "confidence": 0.7,
+      "reasoning": "The gateway reason 'card_declined' at the 'payment_authentication' step strongly suggests an authentication failure. While other declines are possible, this combination points to the customer's bank declining the authentication request."
+    },
+    "card|card_declined|gateway|payment_authorization": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.7,
+      "reasoning": "The gateway reported 'card_declined' from the gateway source during payment authorization, with a prior similar failure. This often indicates a bank-level decline without specific details provided to the gateway."
+    },
+    "card|card_declined|razorpay|payment_authentication": {
+      "rootCause": "AUTH_FAILED",
+      "confidence": 0.8,
+      "reasoning": "The gateway reason 'card_declined' at the 'payment_authentication' step strongly suggests that the authentication process failed, rather than a fund or limit issue which typically occurs post-authentication."
+    },
+    "card|card_declined|razorpay|payment_authorization": {
+      "rootCause": "INSUFFICIENT_FUNDS",
+      "confidence": 0.7,
+      "reasoning": "The card was declined during authorization, and there were no prior attempts or specific risk flags. The amount is relatively high (289.40 INR), making insufficient funds a common reason for card declines in India."
+    },
+    "card|payment_declined|bank|payment_authentication": {
+      "rootCause": "AUTH_FAILED",
+      "confidence": 0.8,
+      "reasoning": "The gateway reason 'payment_declined' from the 'bank' during 'payment_authentication' strongly suggests an authentication failure, as the bank declined the payment at the authentication step."
+    },
+    "card|payment_declined|bank|payment_authorization": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.7,
+      "reasoning": "The gateway indicated 'payment_declined' from the 'bank' during 'payment_authorization'. Without further details from the bank, this points to a bank-side decline where the specific reason is not communicated, making OPAQUE_BANK_DECLINE the most fitting cause."
+    },
+    "card|payment_declined|bank|payment_initiation": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.7,
+      "reasoning": "The gateway indicated 'payment_declined' from the 'bank' during 'payment_initiation', which is a common opaque response for various bank-side issues. Without more specific information from the bank, it's difficult to pinpoint the exact cause, but it's clearly a bank-initiated decline."
+    },
+    "card|payment_declined|gateway|payment_authentication": {
+      "rootCause": "AUTH_FAILED",
+      "confidence": 0.7,
+      "reasoning": "The payment failed during the authentication step with a 'payment_declined' reason from the gateway, and prior attempts also failed with the same reason. This strongly suggests an issue with the authentication itself, rather than funds or limits."
+    },
+    "card|payment_declined|gateway|payment_authorization": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.7,
+      "reasoning": "The payment was declined by the gateway during authorization, with no specific reason provided beyond 'payment_declined'. This often points to an issue on the issuer's side that is not transparently communicated."
+    },
+    "card|payment_declined|razorpay|payment_authorization": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.7,
+      "reasoning": "The gateway provided a generic 'payment_declined' reason during authorization, which often indicates a bank-side decline without specific details. Given it's the first attempt and no other specific issues are indicated, an opaque bank decline is the most likely inference."
+    },
+    "card|payment_failed|bank|payment_authentication": {
+      "rootCause": "AUTH_FAILED",
+      "confidence": 0.7,
+      "reasoning": "The gateway step 'payment_authentication' and gateway reason 'payment_failed' strongly suggest an authentication failure. The amount is relatively high, but without prior attempts or specific limits, AUTH_FAILED is more direct than TRANSACTION_LIMIT_EXCEEDED."
+    },
+    "card|payment_failed|bank|payment_authorization": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.7,
+      "reasoning": "The gateway reported 'payment_failed' from the 'bank' during 'payment_authorization', with a prior similar failure. This indicates a bank-level decline without a specific reason provided by the gateway."
+    },
+    "card|payment_failed|bank|payment_initiation": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.7,
+      "reasoning": "The gateway indicated 'payment_failed' from the 'bank' during 'payment_initiation' for a card transaction. Without further details, this points to a bank-side issue that is not transparently communicated, making OPAQUE_BANK_DECLINE the most likely cause."
+    },
+    "card|payment_failed|gateway|payment_authorization": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.7,
+      "reasoning": "The payment failed at the authorization step with a generic 'payment_failed' reason from the gateway, and there are no prior attempts or specific indicators to suggest other causes like customer abandonment, technical issues, or invalid instrument. The large amount and early morning hour could contribute to a bank's automated decline."
+    },
+    "card|payment_failed|razorpay|payment_authorization": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.7,
+      "reasoning": "The payment failed at the authorization step with a generic 'payment_failed' reason from Razorpay. Given the card method and the lack of specific details, an opaque bank decline is the most likely cause, as banks often do not provide detailed reasons for declines."
+    },
+    "upi|payment_declined|bank|payment_authentication": {
+      "rootCause": "TRANSACTION_LIMIT_EXCEEDED",
+      "confidence": 0.7,
+      "reasoning": "The payment failed at the authentication step, declined by the bank, and the amount is quite high for a UPI transaction (8236.24 INR). This strongly suggests a transaction limit was exceeded, as UPI often has daily or per-transaction limits."
+    },
+    "upi|payment_declined|bank|payment_authorization": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.7,
+      "reasoning": "The gateway indicated 'payment_declined' from the 'bank' during 'payment_authorization' for a UPI transaction. Without more specific information from the bank, it's an opaque decline."
+    },
+    "upi|payment_declined|bank|payment_initiation": {
+      "rootCause": "TRANSACTION_LIMIT_EXCEEDED",
+      "confidence": 0.7,
+      "reasoning": "The payment failed multiple times with 'payment_declined' from the bank during initiation, for a relatively high amount (66022 paise or 660.22 INR) via UPI, late in the evening. This pattern strongly suggests a daily or per-transaction limit being hit, which is common for UPI transactions, especially for larger amounts."
+    },
+    "upi|payment_declined|gateway|payment_authentication": {
+      "rootCause": "AUTH_FAILED",
+      "confidence": 0,
+      "reasoning": "The payment was declined at the authentication step, which strongly suggests an issue with the customer's authentication rather than funds or limits. The gateway reason 'payment_declined' at this stage points to an authentication failure."
+    },
+    "upi|payment_declined|gateway|payment_authorization": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.7,
+      "reasoning": "The payment failed with 'payment_declined' multiple times at the authorization step, suggesting an issue with the bank or customer's account. Without more specific details from the gateway, it's likely an opaque bank decline rather than a specific limit or fund issue."
+    },
+    "upi|payment_declined|razorpay|payment_authentication": {
+      "rootCause": "AUTH_FAILED",
+      "confidence": 0,
+      "reasoning": "The gateway reason 'payment_declined' at the 'payment_authentication' step for a UPI transaction strongly suggests an authentication failure, as UPI payments require user authentication (PIN)."
+    },
+    "upi|payment_declined|razorpay|payment_authorization": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.7,
+      "reasoning": "The payment was declined by the gateway during authorization, with no specific reason provided. Given it's a UPI transaction and a prior attempt also failed with 'payment_declined', it suggests an issue on the bank's side without further detail."
+    },
+    "upi|payment_declined|razorpay|payment_initiation": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.6,
+      "reasoning": "The payment was declined at the initiation step by Razorpay, with no specific reason provided. Given it's a UPI transaction and the amount is relatively high (2033.05 INR), it's plausible the customer's bank declined it without a specific error code, which is common in India."
+    },
+    "upi|payment_failed|bank|payment_authentication": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.6,
+      "reasoning": "The gateway indicated 'payment_failed' from the 'bank' during 'payment_authentication', which often points to an issue on the bank's side without a specific reason provided to the gateway."
+    },
+    "upi|payment_failed|bank|payment_authorization": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.7,
+      "reasoning": "The payment failed at the authorization step, with the bank as the source, and no specific reason provided beyond 'payment_failed'. This points to a bank-side issue without further details."
+    },
+    "upi|payment_failed|bank|payment_initiation": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.7,
+      "reasoning": "The payment failed at the payment initiation step from the bank, with a generic 'payment_failed' reason. Without more specific information, it's likely an opaque bank decline."
+    },
+    "upi|payment_failed|gateway|payment_authorization": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.7,
+      "reasoning": "The payment failed at the authorization step with a generic 'payment_failed' reason from the gateway. Given the UPI method and prior failed attempts, it's likely an issue on the bank's side without a specific error code."
+    },
+    "upi|payment_failed|razorpay|payment_authentication": {
+      "rootCause": "AUTH_FAILED",
+      "confidence": 0.7,
+      "reasoning": "The payment failed during the authentication step via UPI, which often points to issues like incorrect PIN entry or authentication timeouts, rather than fund or limit issues which typically manifest later."
+    },
+    "upi|payment_failed|razorpay|payment_authorization": {
+      "rootCause": "CUSTOMER_ABANDONED",
+      "confidence": 0.6,
+      "reasoning": "The payment failed at the authorization step with UPI, and no prior attempts or specific error codes were provided. This often indicates the customer did not complete the UPI app approval in time."
+    },
+    "upi|payment_failed|razorpay|payment_initiation": {
+      "rootCause": "CUSTOMER_ABANDONED",
+      "confidence": 0.7,
+      "reasoning": "The payment failed at the initiation step with UPI, and there were no prior attempts or specific decline reasons. This often indicates the customer did not complete the UPI app interaction."
+    }
+  }
+}

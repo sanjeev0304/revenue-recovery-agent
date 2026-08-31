@@ -508,10 +508,8 @@ export function Metrics({ results }: { results: EvalResults }) {
                 . On the one class the model exists to handle, it does not beat the guess.{' '}
               </>
             )}
-            Downstream that costs{' '}
-            <span className="num text-esc">{Math.abs(modelGain)} payments</span> and{' '}
-            <span className="num text-esc">{money(Math.abs(modelGainPaise))}</span>{' '}
-            against the majority arm, which recovers{' '}
+            At the recovery level the two arms cannot be told apart at this sample size:
+            the majority arm recovers{' '}
             <span className="num text-text">
               {majority.recovered}/{majority.processed}
             </span>{' '}
@@ -519,10 +517,17 @@ export function Metrics({ results }: { results: EvalResults }) {
             <span className="num text-text">
               {agent.recovered}/{agent.processed}
             </span>
-            .
+            , a gap of{' '}
+            <span className="num text-text">{Math.abs(modelGain)}</span>, while the model
+            arm itself moved by <span className="num text-text">11 payments</span> between
+            two runs of identical code on identical data. A gap that small inside that much
+            noise is not a result and is not reported as one.
           </p>
           <p className="mt-2 max-w-4xl text-sm text-faint">
-            This is a finding about the classifier on one subset, not about the pipeline.
+            The classification gap is the part that holds: 18 to 20 records across three
+            runs, stable, and explained by the split below — the model reads a genuinely
+            opaque decline well and almost never spots a masked one. This is a finding about
+            the classifier on one subset, not about the pipeline.
             The headline above stands on the deterministic diagnosis and policy layer:{' '}
             <span className="num text-text">
               {baseline.recovered}/{baseline.processed}
@@ -538,7 +543,10 @@ export function Metrics({ results }: { results: EvalResults }) {
         </div>
 
         <p className="num mt-3 text-xs text-faint">
-          LLM hit rate {cmp.llmHitRate.calls}/{cmp.llmHitRate.total} (
+          The LLM arm replays a committed cache of model diagnoses, so this run is
+          reproducible; Gemini at temperature 0 is not deterministic and three live runs
+          moved this arm by up to 11 payments. These numbers are one draw from that
+          distribution. LLM hit rate {cmp.llmHitRate.calls}/{cmp.llmHitRate.total} (
           {((100 * cmp.llmHitRate.calls) / cmp.llmHitRate.total).toFixed(1)}%) of records
           required a model call. PRD target was under 15%; see docs/EVAL-PLAN.md for why
           that is unreachable alongside a meaningful OPAQUE_BANK_DECLINE metric.

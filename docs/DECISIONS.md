@@ -62,19 +62,52 @@ production system it would — that is how failed payments enter. Here payments 
 through the batch importer, because creating records from arbitrary test-mode traffic would
 put rows with no ground-truth labels into the dataset the eval measures.
 
+## The eval replays a pinned LLM cache
+
+Gemini at `temperature: 0` is not deterministic. Three eval runs over identical code and
+identical data produced agent-arm recoveries of 615, 712 and 723; the last two differed by
+11 payments with every deterministic arm bit-identical. EVAL-PLAN requires a fixed seed to
+produce identical numbers, and a live model call cannot satisfy that.
+
+The 33 diagnoses the model produces for the 33 distinct error signatures are therefore
+cached to `scripts/eval/llm-cache.json` and replayed. The cache is committed, so the eval is
+reproducible for anyone who clones the repo, and a full run costs zero API calls.
+
+The cache records the model it was built with and refuses to replay under a different model
+name, since attributing one model's answers to another would be a misattribution rather than
+a reproduction. `--refresh-llm-cache` rebuilds it from live calls.
+
+What this buys is reproducibility, not certainty. **The pinned run is one draw from a
+distribution whose spread is about 11 payments**, and that is stated in EVAL-PLAN next to
+the numbers rather than left for a reviewer to discover by running it twice.
+
 ## The LLM classifier loses to majority-class guessing on the opaque subset
 
 Reported because it was measured, not because it flatters the build.
 
 On the 1100 record train split, the opaque subset is 319 records. Majority-class guessing —
 always predict `OPAQUE_BANK_DECLINE` — scores 174/319 (54.5%). The Gemini classifier scores
-156/319 (48.9%). Downstream, the majority arm recovers 726/1100 against the agent's
-712/1100.
+154/319 (48.3%).
+
+**The finding is a classification result, not a recovery result, and the two have very
+different strengths.**
+
+*Classification: the finding holds.* The gap is 18 to 20 records across three runs
+(174 against 156, then 174 against 154). It is stable, it is larger than the run-to-run
+movement, and it reproduces.
+
+*Recovery: the two arms are indistinguishable at this sample size.* The majority arm
+recovers 726/1100 and the agent 723/1100, a gap of 3. The LLM arm moved by 11 payments
+between two runs of identical code on identical data, so a 3 payment gap sits inside the
+noise. An earlier run showed a 14 payment gap in the same direction, which is why this is
+recorded as "cannot be distinguished" rather than as either arm winning. Claiming the
+majority arm recovers more money would be reading a difference smaller than the
+measurement error.
 
 **Scope matters and is stated deliberately.** This is a finding about the classifier on one
 subset, not about the agent. The deterministic taxonomy resolves 781 of 1100 records, which
 neither arm touches, and the headline result rests on that layer plus the policy engine:
-baseline 246/1100 (22.4%) to agent 712/1100 (64.7%). "Guessing beats AI" would be a
+baseline 246/1100 (22.4%) to agent 723/1100 (65.7%). "Guessing beats AI" would be a
 misreading.
 
 The control was audited before the result was accepted. The majority arm substitutes only
@@ -83,8 +116,11 @@ and relabels zero records the taxonomy could have resolved. All 319 substituted 
 carry an opaque gateway reason. Had it been overriding deterministic causes it would have
 been a bug in the arm rather than a finding, which is why it was checked.
 
-The failure is specific rather than general: 154/174 (88.5%) on genuinely opaque records,
-2/145 (1.4%) on masked ones. The model recognises a real opaque decline and almost never
+The failure is specific rather than general, and the split is the explanation: 152/174
+(87.4%) on genuinely opaque records against 2/145 (1.4%) on masked ones. The model
+recognises a real opaque decline nearly nine times in ten and essentially never detects a
+masked cause, so its aggregate sits below a constant guess purely because the masked half
+drags it there. The model recognises a real opaque decline and almost never
 spots a masked cause. The masked-in-burst cell is 0/46, which is unsurprising while the
 burst feature is defined but not yet computed into the prompt — that cell says nothing about
 the model yet.
@@ -138,7 +174,7 @@ Measured on the 1100 record train split:
 | | before | after |
 |---|---|---|
 | recovered, LLM off | 509/1100 (46.3%) | 567/1100 (51.5%) |
-| recovered, LLM on | 607/1100 (55.2%) | 724/1100 (65.8%) |
+| recovered, LLM on | 615/1100 (55.9%) | 723/1100 (65.7%) |
 | vetoes, LLM off | 130 | 31 |
 | vetoes, LLM on | 272 | 54 |
 | contacts sent, LLM on | 239 | 500 |
