@@ -15,11 +15,13 @@ function Stage({
   index,
   title,
   tone,
+  last,
   children,
 }: {
   index: string
   title: string
   tone?: string
+  last?: boolean
   children: React.ReactNode
 }) {
   return (
@@ -29,7 +31,9 @@ function Stage({
       >
         <span className="num text-[10px] leading-none">{index}</span>
       </span>
-      <span className="absolute bottom-0 left-[10px] top-5 w-px bg-border" />
+      {last !== true && (
+        <span className="absolute bottom-0 left-[10px] top-5 w-px bg-border" />
+      )}
       <h2 className="label mb-2 text-dim">{title}</h2>
       {children}
     </section>
@@ -62,11 +66,13 @@ function ActionBlock({
   failedAt,
   stageIndex,
   actionNumber,
+  last,
 }: {
   action: TimelineAction
   failedAt: Date
   stageIndex: number
   actionNumber: number
+  last: boolean
 }) {
   const vetoed = action.status === 'vetoed'
   const at = action.executedAt ?? action.scheduledFor
@@ -76,6 +82,7 @@ function ActionBlock({
       index={String(stageIndex)}
       title={`action ${actionNumber}`}
       tone={vetoed ? 'border-veto text-veto' : 'border-border-strong text-faint'}
+      last={last}
     >
       <div
         className={`border-l-2 bg-surface px-3 py-2.5 ${vetoed ? 'border-l-veto' : 'border-l-accent'}`}
@@ -267,8 +274,11 @@ export function Timeline({ payment }: { payment: PaymentTimeline }) {
       </Stage>
 
       {payment.actions.length === 0 ? (
-        <Stage index="4" title="actions">
-          <p className="text-sm text-faint">No actions proposed.</p>
+        <Stage index="4" title="actions" last>
+          <p className="text-sm text-faint">
+            No actions were proposed. The playbook for this cause acts by escalating, or
+            the payment has not been picked up by a batch run yet.
+          </p>
         </Stage>
       ) : (
         payment.actions.map((a, i) => (
@@ -278,6 +288,7 @@ export function Timeline({ payment }: { payment: PaymentTimeline }) {
             stageIndex={i + 4}
             actionNumber={i + 1}
             failedAt={payment.failedAt}
+            last={i === payment.actions.length - 1}
           />
         ))
       )}
@@ -319,7 +330,11 @@ export function Timeline({ payment }: { payment: PaymentTimeline }) {
                   {stamp(log.wallClockAt)}
                 </td>
                 <td className="num px-2 py-1 text-xs text-dim">{log.ruleFired ?? '—'}</td>
-                <td className="num px-2 py-1 text-xs text-faint">{log.reasoning ?? '—'}</td>
+                <td className="num px-2 py-1 text-xs text-faint">
+                  <span className="line-clamp-3" title={log.reasoning ?? ''}>
+                    {log.reasoning ?? '—'}
+                  </span>
+                </td>
               </tr>
             ))}
           </tbody>

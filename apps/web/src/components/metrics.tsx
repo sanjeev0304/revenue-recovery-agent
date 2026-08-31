@@ -133,6 +133,67 @@ function Stat({ label, children }: { label: string; children: React.ReactNode })
   )
 }
 
+function HeadlineStat({
+  label,
+  hint,
+  agentValue,
+  agentSub,
+  baselineValue,
+  baselineSub,
+  agentShare,
+  baselineShare,
+  delta,
+  deltaGood,
+}: {
+  label: string
+  hint: string
+  agentValue: string
+  agentSub: string
+  baselineValue: string
+  baselineSub: string
+  agentShare: number
+  baselineShare: number
+  delta: string
+  deltaGood: boolean
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="label">{label}</span>
+        <span className="label normal-case tracking-normal">{hint}</span>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className="num text-xl leading-none text-accent">{agentValue}</span>
+        <span className="num text-xs text-dim">{agentSub}</span>
+        <span className="mt-1 block h-[5px] w-full bg-border">
+          <span
+            className="block h-full bg-accent"
+            style={{ width: `${Math.max(1, Math.round(100 * agentShare))}%` }}
+          />
+        </span>
+        <span className="label mt-0.5">agent</span>
+      </div>
+
+      <div className="flex flex-col gap-1 border-t pt-2.5">
+        <span className="num text-md leading-none text-dim">{baselineValue}</span>
+        <span className="num text-xs text-faint">{baselineSub}</span>
+        <span className="mt-1 block h-[5px] w-full bg-border">
+          <span
+            className="block h-full bg-dim"
+            style={{ width: `${Math.max(1, Math.round(100 * baselineShare))}%` }}
+          />
+        </span>
+        <span className="label mt-0.5">baseline</span>
+      </div>
+
+      <div className="border-t pt-2">
+        <span className={`num text-sm ${deltaGood ? 'text-ok' : 'text-esc'}`}>{delta}</span>
+      </div>
+    </div>
+  )
+}
+
 function MatrixTable({ cells, caption }: { cells: MatrixCell[]; caption: string }) {
   if (cells.length === 0) {
     return <p className="text-xs text-faint">No cells in this group.</p>
@@ -245,8 +306,99 @@ export function Metrics({ results }: { results: EvalResults }) {
         </span>
       </div>
 
-      <section className="border-l-2 border-l-accent bg-surface px-4 py-4">
-        <h2 className="label mb-2 text-accent">finding — what the model actually buys</h2>
+      <section className="border-l-2 border-l-accent bg-surface px-5 py-5">
+        <div className="mb-5 flex flex-wrap items-baseline gap-x-6 gap-y-1">
+          <h2 className="label text-accent">baseline vs agent</h2>
+          <span className="text-xs text-faint">
+            The naive retry loop against the full agent, over the same {results.recordCount}{' '}
+            records with the same recoverability oracle. Every rate carries its raw counts.
+          </span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-x-10 gap-y-4">
+          <HeadlineStat
+            label="payments recovered"
+            hint="higher is better"
+            agentValue={`${agent.recovered}/${agent.processed}`}
+            agentSub={`${((100 * agent.recovered) / agent.processed).toFixed(1)}%`}
+            baselineValue={`${baseline.recovered}/${baseline.processed}`}
+            baselineSub={`${((100 * baseline.recovered) / baseline.processed).toFixed(1)}%`}
+            agentShare={agent.recovered / agent.processed}
+            baselineShare={baseline.recovered / baseline.processed}
+            delta={`+${agent.recovered - baseline.recovered} payments`}
+            deltaGood={agent.recovered > baseline.recovered}
+          />
+          <HeadlineStat
+            label="money recovered"
+            hint="higher is better"
+            agentValue={money(agent.recoveredPaise)}
+            agentSub={`${((100 * agent.recoveredPaise) / agent.totalPaise).toFixed(1)}% of ${money(agent.totalPaise)} at risk`}
+            baselineValue={money(baseline.recoveredPaise)}
+            baselineSub={`${((100 * baseline.recoveredPaise) / baseline.totalPaise).toFixed(1)}% of value at risk`}
+            agentShare={agent.recoveredPaise / agent.totalPaise}
+            baselineShare={baseline.recoveredPaise / baseline.totalPaise}
+            delta={`+${money(agent.recoveredPaise - baseline.recoveredPaise)}`}
+            deltaGood={agent.recoveredPaise > baseline.recoveredPaise}
+          />
+          <HeadlineStat
+            label="wasted attempts"
+            hint="lower is better"
+            agentValue={String(agent.wastedChargeAttempts)}
+            agentSub={`of ${agent.chargeAttempts} charge attempts · ${((100 * agent.wastedChargeAttempts) / agent.chargeAttempts).toFixed(0)}%`}
+            baselineValue={String(baseline.wastedChargeAttempts)}
+            baselineSub={`of ${baseline.chargeAttempts} charge attempts · ${((100 * baseline.wastedChargeAttempts) / baseline.chargeAttempts).toFixed(0)}%`}
+            agentShare={agent.wastedChargeAttempts / agent.chargeAttempts}
+            baselineShare={baseline.wastedChargeAttempts / baseline.chargeAttempts}
+            delta={`${agent.wastedChargeAttempts - baseline.wastedChargeAttempts} attempts`}
+            deltaGood={agent.wastedChargeAttempts < baseline.wastedChargeAttempts}
+          />
+        </div>
+
+        <p className="mt-5 max-w-5xl border-t pt-3 text-base text-dim">
+          The agent recovers{' '}
+          <span className="num text-text">
+            {(agent.recovered / Math.max(1, baseline.recovered)).toFixed(1)}×
+          </span>{' '}
+          the payments and{' '}
+          <span className="num text-text">
+            {(agent.recoveredPaise / Math.max(1, baseline.recoveredPaise)).toFixed(1)}×
+          </span>{' '}
+          the money while making{' '}
+          <span className="num text-text">
+            {(100 * (1 - agent.chargeAttempts / baseline.chargeAttempts)).toFixed(0)}% fewer
+          </span>{' '}
+          charge attempts. The efficiency half is the stronger result: the baseline spends{' '}
+          <span className="num text-esc">
+            {((100 * baseline.wastedChargeAttempts) / baseline.chargeAttempts).toFixed(0)}%
+          </span>{' '}
+          of everything it does on payments that could never have recovered, against{' '}
+          <span className="num text-text">
+            {((100 * agent.wastedChargeAttempts) / agent.chargeAttempts).toFixed(0)}%
+          </span>{' '}
+          for the agent.
+        </p>
+      </section>
+
+      <Section
+        title="three arms"
+        note="Baseline is the naive retry loop from docs/POLICY-SPEC.md: fixed +1h, +6h, +24h, max 3, no diagnosis and no guardrails. Majority class runs the full pipeline but replaces every model call with the majority label — it is the control that says what the model is worth."
+      >
+        <div className="grid grid-cols-3 gap-3">
+          {reported.map((arm) => (
+            <ArmCard key={arm.key} arm={arm} best={best} />
+          ))}
+        </div>
+        <p className="num mt-3 text-xs text-faint">
+          A fourth run — {noLlm.label} — is the paired control for the finding below:{' '}
+          {noLlm.recovered}/{noLlm.processed} recovered, {money(noLlm.recoveredPaise)},{' '}
+          {noLlm.wastedChargeAttempts} wasted attempts.
+        </p>
+      </Section>
+
+      <section className="border-l-2 border-l-border-strong bg-surface px-5 py-5">
+        <h2 className="label mb-2 text-dim">
+          secondary finding — what the model actually buys
+        </h2>
         <p className="max-w-4xl text-base text-dim">
           Turning the model on recovers more money and more payments. It also classifies
           slightly <em className="not-italic text-text">worse</em> and burns roughly twice
@@ -374,22 +526,6 @@ export function Metrics({ results }: { results: EvalResults }) {
           that is unreachable alongside a meaningful OPAQUE_BANK_DECLINE metric.
         </p>
       </section>
-
-      <Section
-        title="three arms"
-        note="Baseline is the naive retry loop from docs/POLICY-SPEC.md: fixed +1h, +6h, +24h, max 3, no diagnosis and no guardrails. Majority class runs the full pipeline but replaces every model call with the majority label. Every rate carries its raw counts."
-      >
-        <div className="grid grid-cols-3 gap-3">
-          {reported.map((arm) => (
-            <ArmCard key={arm.key} arm={arm} best={best} />
-          ))}
-        </div>
-        <p className="num mt-3 text-xs text-faint">
-          A fourth run — {noLlm.label} — is the paired control for the finding above:{' '}
-          {noLlm.recovered}/{noLlm.processed} recovered, {money(noLlm.recoveredPaise)},{' '}
-          {noLlm.wastedChargeAttempts} wasted attempts.
-        </p>
-      </Section>
 
       <Section
         title="cost-weighted confusion matrix"

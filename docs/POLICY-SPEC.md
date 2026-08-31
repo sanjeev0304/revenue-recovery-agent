@@ -148,11 +148,24 @@ reason and never executed. Pure functions, tested independently.
 | `GLOBAL_ATTEMPT_CAP` | Max 3 charge attempts per payment across all playbooks, ever |
 | `PLAYBOOK_ATTEMPT_CAP` | Enforce the per-playbook cap declared above |
 | `COOLDOWN` | Veto any charge attempt inside the playbook's minimum interval since the last attempt |
-| `QUIET_HOURS` | Veto customer contact between 21:00 and 09:00 customer-local. Charge retries exempt, they are silent |
+| `QUIET_HOURS` | Customer contact must not fall between 21:00 and 09:00 customer-local. Enforced by deferral at scheduling time, not by veto — see below. Charge retries exempt, they are silent |
 | `CONTACT_CAP` | Max 2 contacts per payment; max 3 per customer per rolling 7 days across all payments |
 | `OPT_OUT` | If the customer opted out, veto all contact. Charge retries still allowed |
 | `IDEMPOTENCY` | Every executed action carries a deterministic key. Duplicate key is vetoed |
 | `AMOUNT_CEILING` | Veto automatic retry above a configured amount, escalate instead. Default 50000000 paise |
+
+`QUIET_HOURS` defers, it does not cancel. When the playbook schedules a `send_nudge` that
+would land between 21:00 and 09:00 customer-local, the policy engine moves it forward to
+09:00 on the next morning that is not in quiet hours, and records the original time on the
+action as `deferredFrom`. "Not now" was never meant to mean "never".
+
+The guardrail is retained unchanged as a backstop. Nothing should ever reach it, because
+scheduling already excludes quiet hours, so if it fires it means a contact was constructed
+somewhere other than the policy engine. `EVAL-PLAN` requires quiet-hours violations to be
+zero, and the guardrail is what makes that a measurement rather than an assumption.
+
+Only `send_nudge` defers. `issue_payment_link` mints a URL and messages nobody, so issuing
+one at 02:00 disturbs no one and is left where the playbook put it.
 
 `CONTACT_CAP` counts `send_nudge` actions only. `issue_payment_link` is not a contact:
 it mints a URL, it does not message anybody. Counting it would put the

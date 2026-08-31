@@ -8,6 +8,8 @@ import type {
 } from './types.js'
 import {
   PLAYBOOKS,
+  QUIET_HOURS_END,
+  QUIET_HOURS_START,
   UNKNOWN_CONFIDENCE_FLOOR,
   halveCaps,
   type Playbook,
@@ -16,7 +18,13 @@ import {
 } from './playbooks.js'
 import { evaluateGuardrails } from './guardrails.js'
 import { lookupReason } from './taxonomy.js'
-import { DAY_MS, addMs, nextLocalMidnight, nextSalaryWindow } from './time.js'
+import {
+  DAY_MS,
+  addMs,
+  deferPastQuietHours,
+  nextLocalMidnight,
+  nextSalaryWindow,
+} from './time.js'
 
 export interface PolicyInput {
   payment: PaymentFacts
@@ -87,13 +95,27 @@ function buildAction(
         idempotencyKey: key,
         payload: { amountPaise: input.payment.amountPaise },
       }
-    case 'send_nudge':
+    case 'send_nudge': {
+      const due = addMs(base, step.delayMs)
+      const sendable = deferPastQuietHours(
+        due,
+        input.customer.timezone,
+        QUIET_HOURS_START,
+        QUIET_HOURS_END,
+      )
       return {
         type: 'send_nudge',
-        scheduledFor: addMs(base, step.delayMs),
+        scheduledFor: sendable,
         idempotencyKey: key,
-        payload: { includeLink: step.includeLink, copyHint: step.copyHint },
+        payload: {
+          includeLink: step.includeLink,
+          copyHint: step.copyHint,
+          ...(sendable.getTime() === due.getTime()
+            ? {}
+            : { deferredFrom: due.toISOString(), deferredBy: 'QUIET_HOURS' }),
+        },
       }
+    }
   }
 }
 
@@ -182,6 +204,13 @@ export function decide(input: PolicyInput): Decision {
 
   const action = buildAction(step, stepIndex, input)
   evidence.push(`playbook step ${stepIndex + 1}/${playbook.steps.length}: ${step.action}`)
+
+  const deferredFrom = action.payload['deferredFrom']
+  if (typeof deferredFrom === 'string') {
+    evidence.push(
+      `contact fell in quiet hours at ${deferredFrom}, deferred to ${action.scheduledFor?.toISOString() ?? 'unknown'} customer-local 09:00`,
+    )
+  }
 
   const verdict = evaluateGuardrails({ ...guardCtx(input, playbook), action })
 

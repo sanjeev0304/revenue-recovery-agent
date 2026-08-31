@@ -226,3 +226,60 @@ export async function runEval(
 
   return report
 }
+
+export interface BaselineReport {
+  processed: number
+  recovered: number
+  recoveredPaise: number
+  totalPaise: number
+  chargeAttempts: number
+  wastedChargeAttempts: number
+  byCause: Record<string, { total: number; recovered: number }>
+}
+
+const BASELINE_SCHEDULE_MS = [1 * 3_600_000, 6 * 3_600_000, 24 * 3_600_000]
+
+export function runBaseline(records: readonly EvalRecord[]): BaselineReport {
+  const report: BaselineReport = {
+    processed: 0,
+    recovered: 0,
+    recoveredPaise: 0,
+    totalPaise: 0,
+    chargeAttempts: 0,
+    wastedChargeAttempts: 0,
+    byCause: {},
+  }
+
+  for (const record of records) {
+    const cause = record.trueCause ?? 'UNKNOWN'
+    report.byCause[cause] ??= { total: 0, recovered: 0 }
+    report.byCause[cause]!.total++
+    report.processed++
+    report.totalPaise += record.facts.amountPaise
+
+    let recovered = false
+
+    for (const offset of BASELINE_SCHEDULE_MS) {
+      report.chargeAttempts++
+      if (record.oracle !== null && !record.oracle.retry_charge.succeeds) {
+        report.wastedChargeAttempts++
+      }
+      const at = new Date(record.facts.failedAt.getTime() + offset)
+      if (
+        record.oracle !== null &&
+        oracleAllows(record.oracle, 'retry_charge', record.facts.failedAt, at)
+      ) {
+        recovered = true
+        break
+      }
+    }
+
+    if (recovered) {
+      report.recovered++
+      report.recoveredPaise += record.facts.amountPaise
+      report.byCause[cause]!.recovered++
+    }
+  }
+
+  return report
+}

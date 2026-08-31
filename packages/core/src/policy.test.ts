@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { decide, resolvePlaybook, type PolicyInput } from './policy.js'
 import { classify, applyLlmDiagnosis } from './diagnosis.js'
 import { DAY_MS, HOUR_MS, localHour } from './time.js'
+import { evaluateGuardrails } from './guardrails.js'
+import { PLAYBOOKS } from './playbooks.js'
 import type { Diagnosis, PaymentFacts } from './types.js'
 
 const IST = 'Asia/Kolkata'
@@ -208,15 +210,61 @@ describe('INSTRUMENT_INVALID', () => {
 })
 
 describe('quiet hours interaction', () => {
-  it('vetoes a nudge that would land at 02:00 local', () => {
+  it('defers a nudge that would land at 02:00 local instead of killing it', () => {
     const abandonedAt = new Date('2026-09-10T18:35:00Z')
     const payment = facts({ reason: 'payment_cancelled', failedAt: abandonedAt })
     const d = decide(
       input({ payment, completedSteps: 1, lastActionAt: abandonedAt, now: abandonedAt }),
     )
+
     expect(d.proposedAction?.type).toBe('send_nudge')
-    expect(d.guardrailVerdict).toMatchObject({ allowed: false, vetoedBy: 'QUIET_HOURS' })
-    expect(d.scheduledFor).toBeNull()
+    expect(d.guardrailVerdict.allowed).toBe(true)
+    expect(d.scheduledFor).not.toBeNull()
+    expect(localHour(d.scheduledFor!, IST)).toBe(9)
+    expect(d.proposedAction?.payload['deferredBy']).toBe('QUIET_HOURS')
+    expect(d.evidence.some((e) => e.includes('deferred to'))).toBe(true)
+  })
+
+  it('leaves a daytime nudge exactly where the playbook put it', () => {
+    const failedAt = new Date('2026-09-10T04:00:00Z')
+    const payment = facts({ reason: 'payment_cancelled', failedAt })
+    const d = decide(input({ payment, completedSteps: 1, lastActionAt: failedAt, now: failedAt }))
+
+    expect(d.scheduledFor!.getTime()).toBe(failedAt.getTime() + 2 * HOUR_MS)
+    expect(d.proposedAction?.payload['deferredBy']).toBeUndefined()
+  })
+
+  it('never proposes a nudge inside quiet hours, at any failure hour', () => {
+    for (let h = 0; h < 24; h++) {
+      const failedAt = new Date(Date.UTC(2026, 8, 10, h, 5))
+      const payment = facts({ reason: 'payment_cancelled', failedAt })
+      const d = decide(
+        input({ payment, completedSteps: 1, lastActionAt: failedAt, now: failedAt }),
+      )
+      if (d.proposedAction?.type !== 'send_nudge') continue
+      const hour = localHour(d.scheduledFor!, IST)
+      expect(hour).toBeGreaterThanOrEqual(9)
+      expect(hour).toBeLessThan(21)
+      expect(d.guardrailVerdict.allowed).toBe(true)
+    }
+  })
+
+  it('leaves the QUIET_HOURS guardrail in place as a backstop', () => {
+    const at = new Date('2026-09-10T18:35:00Z')
+    const payment = facts({ reason: 'payment_cancelled', failedAt: at })
+    const ctx = input({ payment, completedSteps: 1, lastActionAt: at, now: at })
+    const d = decide(ctx)
+
+    const forced = evaluateGuardrails({
+      payment: ctx.payment,
+      customer: ctx.customer,
+      history: ctx.history,
+      rootCause: d.rootCause,
+      playbook: PLAYBOOKS[d.rootCause],
+      action: { ...d.proposedAction!, scheduledFor: at },
+      now: at,
+    })
+    expect(forced).toMatchObject({ allowed: false, vetoedBy: 'QUIET_HOURS' })
   })
 })
 

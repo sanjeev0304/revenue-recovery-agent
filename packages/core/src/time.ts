@@ -101,3 +101,21 @@ export function nextSalaryWindow(from: Date, timezone: string): Date {
 
   return addMs(from, 30 * DAY_MS)
 }
+
+export function deferPastQuietHours(
+  at: Date,
+  timezone: string,
+  quietStartHour: number,
+  quietEndHour: number,
+): Date {
+  const hour = localHour(at, timezone)
+  const inQuietHours = hour >= quietStartHour || hour < quietEndHour
+  if (!inQuietHours) return at
+
+  const nextMidnight = nextLocalMidnight(at, timezone)
+
+  if (hour < quietEndHour) {
+    return new Date(nextMidnight.getTime() - DAY_MS + quietEndHour * HOUR_MS)
+  }
+  return new Date(nextMidnight.getTime() + quietEndHour * HOUR_MS)
+}

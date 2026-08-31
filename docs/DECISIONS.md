@@ -62,6 +62,35 @@ production system it would — that is how failed payments enter. Here payments 
 through the batch importer, because creating records from arbitrary test-mode traffic would
 put rows with no ground-truth labels into the dataset the eval measures.
 
+## QUIET_HOURS defers a contact rather than cancelling it
+
+The guardrail vetoed any nudge falling between 21:00 and 09:00 customer-local, and a veto
+ended the payment's playbook. On the train split that was 262 of 293 agent vetoes: the
+overwhelming majority of blocked actions were blocked because of the hour, not because the
+action was wrong.
+
+POLICY-SPEC never intended that. Quiet hours exist so a customer is not messaged at 2am,
+not so a payment is abandoned because its nudge happened to fall due overnight. "Not now"
+was being implemented as "never".
+
+Contacts are now deferred at scheduling time. The policy engine moves a `send_nudge` that
+would land in quiet hours forward to 09:00 customer-local and records `deferredFrom` on the
+action so the timeline shows what happened. The guardrail is kept unchanged as a backstop
+that should now never fire, which is what keeps EVAL-PLAN's zero-violations requirement a
+measurement rather than an assumption.
+
+Only `send_nudge` defers. A payment link disturbs nobody at 02:00.
+
+Measured on the 1100 record train split:
+
+| | before | after |
+|---|---|---|
+| recovered, LLM off | 509/1100 (46.3%) | 567/1100 (51.5%) |
+| recovered, LLM on | 607/1100 (55.2%) | 724/1100 (65.8%) |
+| vetoes, LLM off | 130 | 31 |
+| vetoes, LLM on | 272 | 54 |
+| contacts sent, LLM on | 239 | 500 |
+
 ## Contact interventions are scored on a response horizon, not on timing
 
 `oracleAllows` originally required every intervention to occur at or after the oracle's

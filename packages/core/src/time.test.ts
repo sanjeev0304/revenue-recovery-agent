@@ -3,6 +3,7 @@ import {
   DAY_MS,
   HOUR_MS,
   addMs,
+  deferPastQuietHours,
   isLastWorkingDayOfMonth,
   localHour,
   nextLocalMidnight,
@@ -98,5 +99,57 @@ describe('addMs', () => {
     const out = addMs(at, HOUR_MS)
     expect(at.toISOString()).toBe('2026-01-01T00:00:00.000Z')
     expect(out.toISOString()).toBe('2026-01-01T01:00:00.000Z')
+  })
+})
+
+describe('deferPastQuietHours', () => {
+  const defer = (utc: string) =>
+    deferPastQuietHours(new Date(utc), IST, 21, 9)
+
+  it('leaves a daytime contact untouched', () => {
+    const noon = new Date('2026-09-01T06:30:00Z')
+    expect(defer('2026-09-01T06:30:00Z')).toEqual(noon)
+  })
+
+  it('leaves 09:00 and 20:59 local untouched at the boundaries', () => {
+    expect(localHour(defer('2026-09-01T03:30:00Z'), IST)).toBe(9)
+    expect(defer('2026-09-01T03:30:00Z').toISOString()).toBe('2026-09-01T03:30:00.000Z')
+    expect(defer('2026-09-01T15:29:00Z').toISOString()).toBe('2026-09-01T15:29:00.000Z')
+  })
+
+  it('defers 21:00 local to 09:00 the next morning', () => {
+    const out = defer('2026-09-01T15:30:00Z')
+    expect(localHour(out, IST)).toBe(9)
+    expect(out.getTime()).toBeGreaterThan(new Date('2026-09-01T15:30:00Z').getTime())
+    expect(out.toISOString()).toBe('2026-09-02T03:30:00.000Z')
+  })
+
+  it('defers 02:00 local to 09:00 the same morning', () => {
+    const out = defer('2026-09-01T20:30:00Z')
+    expect(localHour(out, IST)).toBe(9)
+    expect(out.toISOString()).toBe('2026-09-02T03:30:00.000Z')
+  })
+
+  it('defers 08:59 local by one minute, not by a day', () => {
+    const out = defer('2026-09-01T03:29:00Z')
+    expect(out.toISOString()).toBe('2026-09-01T03:30:00.000Z')
+  })
+
+  it('always lands outside quiet hours, for every hour of the day', () => {
+    for (let h = 0; h < 24; h++) {
+      const at = new Date(Date.UTC(2026, 8, 10, h, 17))
+      const out = defer(at.toISOString())
+      const hour = localHour(out, IST)
+      expect(hour).toBeGreaterThanOrEqual(9)
+      expect(hour).toBeLessThan(21)
+      expect(out.getTime()).toBeGreaterThanOrEqual(at.getTime())
+    }
+  })
+
+  it('never moves a contact backwards in time', () => {
+    for (let h = 0; h < 24; h++) {
+      const at = new Date(Date.UTC(2026, 8, 10, h, 45))
+      expect(defer(at.toISOString()).getTime()).toBeGreaterThanOrEqual(at.getTime())
+    }
   })
 })

@@ -90,15 +90,22 @@ export function BoardTable({ initial }: { initial: Board }) {
   const [cause, setCause] = useState<string>('all')
   const [live, setLive] = useState(true)
   const [stale, setStale] = useState(false)
+  const [fetching, setFetching] = useState(false)
   const [changed, setChanged] = useState<Set<string>>(new Set())
+  const [recent, setRecent] = useState(0)
 
   const previous = useRef(new Map(initial.rows.map((r) => [r.id, r.status])))
 
   useEffect(() => {
-    if (!live) return
+    if (!live) {
+      setFetching(false)
+      return
+    }
     let cancelled = false
+    const timers: ReturnType<typeof setTimeout>[] = []
 
     const tick = async (): Promise<void> => {
+      if (!cancelled) setFetching(true)
       try {
         const res = await fetch('/api/board', { cache: 'no-store' })
         if (!res.ok) throw new Error(String(res.status))
@@ -116,12 +123,22 @@ export function BoardTable({ initial }: { initial: Board }) {
         setStale(false)
         if (moved.size > 0) {
           setChanged(moved)
-          setTimeout(() => {
-            if (!cancelled) setChanged(new Set())
-          }, 700)
+          setRecent(moved.size)
+          timers.push(
+            setTimeout(() => {
+              if (!cancelled) setChanged(new Set())
+            }, 700),
+          )
+          timers.push(
+            setTimeout(() => {
+              if (!cancelled) setRecent(0)
+            }, 4000),
+          )
         }
       } catch {
         if (!cancelled) setStale(true)
+      } finally {
+        if (!cancelled) setFetching(false)
       }
     }
 
@@ -129,6 +146,7 @@ export function BoardTable({ initial }: { initial: Board }) {
     return () => {
       cancelled = true
       clearInterval(id)
+      for (const t of timers) clearTimeout(t)
     }
   }, [live])
 
@@ -207,15 +225,26 @@ export function BoardTable({ initial }: { initial: Board }) {
           <span>
             {rows.length} shown{rows.length !== c.total && ` of ${c.total}`}
           </span>
+          <span
+            className={`w-[132px] text-right transition-colors ${recent > 0 ? 'text-accent' : 'text-transparent'}`}
+            aria-live="polite"
+          >
+            {recent > 0 ? `${recent} changed just now` : ''}
+          </span>
           {board.truncated && <span className="text-esc">list truncated</span>}
           {stale && <span className="text-esc">poll failed, showing last good data</span>}
           <button
             type="button"
             onClick={() => setLive((v) => !v)}
-            className={`border px-2 py-0.5 ${
+            className={`flex items-center gap-1.5 border px-2 py-0.5 transition-colors ${
               live ? 'border-accent text-accent' : 'border-border text-faint'
             }`}
           >
+            <span
+              className={`inline-block h-[5px] w-[5px] rounded-full ${
+                live ? (fetching ? 'animate-pulse bg-accent' : 'bg-accent') : 'bg-border-strong'
+              }`}
+            />
             {live ? 'live' : 'paused'}
           </button>
         </div>
@@ -234,7 +263,7 @@ export function BoardTable({ initial }: { initial: Board }) {
           <col />
           <col className="w-[92px]" />
         </colgroup>
-        <thead>
+        <thead className="sticky top-11 z-20">
           <tr className="border-b bg-raised">
             <th />
             <th className="label px-2 py-1.5 text-left font-normal">payment id</th>
@@ -272,8 +301,8 @@ function Row({ row, flashing }: { row: BoardRow; flashing: boolean }) {
 
   return (
     <tr
-      className={`group border-b border-border/60 hover:bg-raised ${flashing ? 'flash' : ''}`}
-      style={{ contentVisibility: 'auto', containIntrinsicSize: '30px' }}
+      className={`group h-[34px] border-b border-border/60 hover:bg-raised ${flashing ? 'flash' : ''}`}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '34px' }}
     >
       <td className={`p-0 ${RAIL[row.status]}`} />
       <td className="px-2 py-1">
@@ -331,7 +360,7 @@ function Row({ row, flashing }: { row: BoardRow; flashing: boolean }) {
         {row.next === null ? (
           <span className="text-faint">—</span>
         ) : vetoed !== null ? (
-          <span className="flex flex-col leading-tight">
+          <span className="flex flex-col leading-[13px]">
             <span className="num text-xs text-veto line-through">{row.next.type}</span>
             <span className="num text-[10px] text-veto/80">{vetoed}</span>
           </span>
@@ -343,7 +372,7 @@ function Row({ row, flashing }: { row: BoardRow; flashing: boolean }) {
         {when === null ? (
           <span className="text-faint">—</span>
         ) : (
-          <span className="num flex flex-col leading-tight">
+          <span className="num flex flex-col leading-[13px]">
             <span className="text-xs text-dim">{offsetFrom(failedAt, when)}</span>
             <span className="text-[10px] text-faint">{stamp(when)}</span>
           </span>

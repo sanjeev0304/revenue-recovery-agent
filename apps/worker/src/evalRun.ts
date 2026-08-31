@@ -1,6 +1,11 @@
 import { prisma } from '@revenue/db'
 import type { Diagnosis, EvalSplit } from '@revenue/core'
-import { loadEvalRecords, runEval, type EvalRecord } from './orchestrator/evalBatch.js'
+import {
+  loadEvalRecords,
+  runBaseline,
+  runEval,
+  type EvalRecord,
+} from './orchestrator/evalBatch.js'
 import { createDiagnoser } from './llm/diagnose.js'
 import { GeminiProvider } from './llm/gemini.js'
 
@@ -47,7 +52,16 @@ try {
   const totalMs = Date.now() - started
   const perRecord = totalMs / Math.max(report.processed, 1)
 
+  const baseline = runBaseline(records)
+
   console.log(`eval: ${split} split, ${report.processed} records, llm=${useLlm ? provider!.model : 'off'}`)
+  console.log('')
+  console.log('baseline arm (fixed +1h/+6h/+24h, max 3, no diagnosis, no guardrails, no contact):')
+  console.log(`  recovered        ${baseline.recovered}/${baseline.processed} (${((100 * baseline.recovered) / baseline.processed).toFixed(1)}%)`)
+  console.log(`  money recovered  ${rupees(baseline.recoveredPaise)}`)
+  console.log(`  charge attempts  ${baseline.chargeAttempts} (${baseline.wastedChargeAttempts} on unrecoverable)`)
+  console.log('')
+  console.log('agent arm:')
   console.log('')
   console.log(`recovered          ${report.recovered}/${report.processed} (${((100 * report.recovered) / report.processed).toFixed(1)}%)`)
   console.log(`money recovered    ${rupees(report.recoveredPaise)} of ${rupees(report.totalPaise)}`)
@@ -67,6 +81,12 @@ try {
     const pct = v.total === 0 ? 0 : (100 * v.recovered) / v.total
     console.log(`  ${cause.padEnd(28)} ${String(v.recovered).padStart(4)}/${String(v.total).padEnd(5)} ${pct.toFixed(0)}%`)
   }
+  console.log('')
+  const liftPts = (100 * report.recovered) / report.processed - (100 * baseline.recovered) / baseline.processed
+  const moneyLift = report.recoveredPaise - baseline.recoveredPaise
+  console.log('')
+  console.log(`lift over baseline  ${liftPts >= 0 ? '+' : ''}${liftPts.toFixed(1)} pts, ${moneyLift >= 0 ? '+' : ''}${rupees(moneyLift)}`)
+  console.log(`wasted attempts     agent ${report.wastedChargeAttempts} vs baseline ${baseline.wastedChargeAttempts}`)
   console.log('')
   console.log(`load ${((loadedAt - started) / 1000).toFixed(1)}s, total ${(totalMs / 1000).toFixed(1)}s, ${perRecord.toFixed(1)}ms per record`)
 } finally {

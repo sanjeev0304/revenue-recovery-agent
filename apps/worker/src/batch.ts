@@ -40,6 +40,27 @@ try {
   console.log(`escalated        ${report.escalated}`)
   console.log(`vetoed           ${report.vetoed}`)
   console.log(`errored          ${report.failed.length}`)
+
+  if (report.failed.length > 0) {
+    const byKind = new Map<string, { count: number; sample: string }>()
+    for (const f of report.failed) {
+      const kind = f.error.split(':')[0] ?? f.error
+      const entry = byKind.get(kind) ?? { count: 0, sample: f.error }
+      entry.count++
+      byKind.set(kind, entry)
+    }
+    console.log('')
+    console.log('errors by kind:')
+    for (const [kind, v] of [...byKind].sort((a, b) => b[1].count - a[1].count)) {
+      console.log(`  ${String(v.count).padStart(4)}x ${kind}`)
+      console.log(`        ${v.sample.slice(0, 160)}`)
+    }
+    console.log('')
+    console.log('errored payments:')
+    for (const f of report.failed.slice(0, 25)) {
+      console.log(`  ${f.paymentId}  ${f.error.slice(0, 140)}`)
+    }
+  }
   for (const f of report.failed) {
     console.log(`  ${f.paymentId}  ${f.error}`)
   }
