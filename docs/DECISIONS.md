@@ -62,6 +62,37 @@ production system it would — that is how failed payments enter. Here payments 
 through the batch importer, because creating records from arbitrary test-mode traffic would
 put rows with no ground-truth labels into the dataset the eval measures.
 
+## The LLM classifier loses to majority-class guessing on the opaque subset
+
+Reported because it was measured, not because it flatters the build.
+
+On the 1100 record train split, the opaque subset is 319 records. Majority-class guessing —
+always predict `OPAQUE_BANK_DECLINE` — scores 174/319 (54.5%). The Gemini classifier scores
+156/319 (48.9%). Downstream, the majority arm recovers 726/1100 against the agent's
+712/1100.
+
+**Scope matters and is stated deliberately.** This is a finding about the classifier on one
+subset, not about the agent. The deterministic taxonomy resolves 781 of 1100 records, which
+neither arm touches, and the headline result rests on that layer plus the policy engine:
+baseline 246/1100 (22.4%) to agent 712/1100 (64.7%). "Guessing beats AI" would be a
+misreading.
+
+The control was audited before the result was accepted. The majority arm substitutes only
+where `classify()` returns `needs_llm`, inherits the deterministic label everywhere else,
+and relabels zero records the taxonomy could have resolved. All 319 substituted records
+carry an opaque gateway reason. Had it been overriding deterministic causes it would have
+been a bug in the arm rather than a finding, which is why it was checked.
+
+The failure is specific rather than general: 154/174 (88.5%) on genuinely opaque records,
+2/145 (1.4%) on masked ones. The model recognises a real opaque decline and almost never
+spots a masked cause. The masked-in-burst cell is 0/46, which is unsurprising while the
+burst feature is defined but not yet computed into the prompt — that cell says nothing about
+the model yet.
+
+The LLM stays in the pipeline. Building it, measuring it against a fair control, and finding
+it wanting is a result; deleting it would leave the question unanswered and the eval with
+nothing to say about whether the model earns its place.
+
 ## Transient retries belong inside each write, not around the composite
 
 Five records in the full train batch errored and left an `Action` row stuck in `executing`.

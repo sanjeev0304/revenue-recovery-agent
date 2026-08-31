@@ -160,8 +160,28 @@ random seed.
 - **LLM hit rate** — share of records that required an LLM call
 - **RISK_DECLINE recall** — reported separately. This is the safety-critical class;
   a missed risk decline means the agent retried something it must never retry.
-- **OPAQUE_BANK_DECLINE accuracy** — reported separately, **in aggregate against the 54.8%
-  majority-class baseline**, with raw counts. This is the class where the LLM does real work
+- **OPAQUE_BANK_DECLINE accuracy** — reported separately, **in aggregate against the
+  majority-class baseline**, with raw counts.
+
+  **Measured result on the train split, stated at its exact scope:** on the 319 record
+  opaque subset (29% of the split), majority-class guessing scores 174/319 (54.5%) and the
+  LLM classifier scores 156/319 (48.9%). On this subset, and only on this subset,
+  majority-class guessing outperforms the LLM classifier.
+
+  The claim is not that guessing beats the model in general, and it is not a statement about
+  the pipeline. The deterministic classifier resolves 781/1100 records that neither the model
+  nor the majority arm touches, and the headline result — baseline 246/1100 (22.4%) to agent
+  712/1100 (64.7%) — rests on the deterministic diagnosis and policy layer, not on the model.
+
+  The majority arm is a fair control, verified rather than assumed: it substitutes only on
+  the 319 records where `classify()` returns `needs_llm`, inherits the deterministic label
+  everywhere else, and relabels zero records the taxonomy could have resolved.
+
+  The model's failure is specific. It scores 154/174 (88.5%) on genuinely opaque records and
+  2/145 (1.4%) on masked ones — it identifies a true opaque decline well and almost never
+  detects a masked cause. The masked-in-burst cell is 0/46, which is expected while the burst
+  feature remains defined but not yet fed into the prompt; that cell is not evidence about
+  the model until the feature is wired. This is the class where the LLM does real work
   rather than confirming a lookup, so it is the honest test of whether the model adds
   anything. If accuracy here is no better than the majority-class guess, say so.
   Per-underlying-cause precision inside this subset is **not** reported: at holdout scale the

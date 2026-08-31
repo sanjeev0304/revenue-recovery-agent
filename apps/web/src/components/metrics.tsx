@@ -487,35 +487,53 @@ export function Metrics({ results }: { results: EvalResults }) {
         <div className="mt-4 border-t pt-3">
           <p className="label mb-1.5 text-esc">and the sharper version</p>
           <p className="max-w-4xl text-base text-dim">
-            Guessing the majority label on every record the deterministic classifier
-            defers on recovers{' '}
+            {opaque !== undefined && (
+              <>
+                Stated at its actual scope: on the{' '}
+                <span className="num text-text">
+                  {opaque.all.total}/{agent.processed}
+                </span>{' '}
+                record opaque subset —{' '}
+                <span className="num text-text">
+                  {((100 * opaque.all.total) / agent.processed).toFixed(0)}%
+                </span>{' '}
+                of the split — majority-class guessing scores{' '}
+                <span className="num text-text">
+                  {opaque.majorityCount}/{opaque.all.total}
+                </span>{' '}
+                against the model&rsquo;s{' '}
+                <span className="num text-esc">
+                  {opaque.all.correct}/{opaque.all.total}
+                </span>
+                . On the one class the model exists to handle, it does not beat the guess.{' '}
+              </>
+            )}
+            Downstream that costs{' '}
+            <span className="num text-esc">{Math.abs(modelGain)} payments</span> and{' '}
+            <span className="num text-esc">{money(Math.abs(modelGainPaise))}</span>{' '}
+            against the majority arm, which recovers{' '}
             <span className="num text-text">
               {majority.recovered}/{majority.processed}
             </span>{' '}
-            and <Money paise={majority.recoveredPaise} tone="text-text" />. The model
-            recovers{' '}
+            to the model&rsquo;s{' '}
             <span className="num text-text">
               {agent.recovered}/{agent.processed}
+            </span>
+            .
+          </p>
+          <p className="mt-2 max-w-4xl text-sm text-faint">
+            This is a finding about the classifier on one subset, not about the pipeline.
+            The headline above stands on the deterministic diagnosis and policy layer:{' '}
+            <span className="num text-text">
+              {baseline.recovered}/{baseline.processed}
             </span>{' '}
-            and <Money paise={agent.recoveredPaise} tone="text-text" />. The model&rsquo;s
-            entire contribution over guessing is{' '}
-            <span className="num text-esc">{modelGain} payments</span> and{' '}
-            <span className="num text-esc">{money(modelGainPaise)}</span>
-            {opaque !== undefined && (
-              <>
-                {' '}
-                — while scoring{' '}
-                <span className="num text-esc">
-                  {opaque.all.correct}/{opaque.all.total}
-                </span>{' '}
-                on the opaque subset against a majority-class baseline of{' '}
-                <span className="num text-text">
-                  {opaque.majorityCount}/{opaque.all.total}
-                </span>
-                , which is below it
-              </>
-            )}
-            . On the one class the model exists to handle, it does not beat the guess.
+            to{' '}
+            <span className="num text-text">
+              {agent.recovered}/{agent.processed}
+            </span>
+            . The majority arm is a fair control: it substitutes only on the records the
+            deterministic classifier defers on and inherits the same deterministic labels
+            everywhere else, so it never relabels a cause the taxonomy already resolves.
           </p>
         </div>
 
