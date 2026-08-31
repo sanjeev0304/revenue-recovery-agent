@@ -1,3 +1,4 @@
+import { readFileSync, existsSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { prisma } from '@revenue/db'
@@ -36,8 +37,52 @@ const num = (name: string): number | undefined => {
 const split: EvalSplit = flag('holdout') ? 'holdout' : 'train'
 const limit = num('limit')
 const maxSteps = num('max-steps') ?? 6
-const persist = !flag('no-persist')
-const write = !flag('no-write')
+const write = flag('write') && !flag('no-write')
+const persist = write && !flag('no-persist')
+
+const RESULTS_JSON = resolve(import.meta.dirname, '../../..', 'docs/results.json')
+
+function existingRunSplit(): string | null {
+  if (!existsSync(RESULTS_JSON)) return null
+  try {
+    const parsed = JSON.parse(readFileSync(RESULTS_JSON, 'utf8')) as {
+      split?: unknown
+      generatedAt?: unknown
+      recordCount?: unknown
+    }
+    return typeof parsed.split === 'string' ? parsed.split : null
+  } catch {
+    return null
+  }
+}
+
+function existingRunLabel(): string {
+  try {
+    const parsed = JSON.parse(readFileSync(RESULTS_JSON, 'utf8')) as {
+      split?: unknown
+      generatedAt?: unknown
+      recordCount?: unknown
+    }
+    return `${String(parsed.split)} split, ${String(parsed.recordCount)} records, generated ${String(parsed.generatedAt)}`
+  } catch {
+    return 'unreadable'
+  }
+}
+
+if (write && existingRunSplit() === 'holdout') {
+  console.error(
+    'REFUSING TO WRITE.\n' +
+      `docs/results.json currently records a holdout run: ${existingRunLabel()}.\n` +
+      'The holdout was read once and cannot be regenerated, so overwriting it would destroy\n' +
+      'the only copy of the measurement the submission rests on.\n\n' +
+      'There is no flag that overrides this. If you genuinely mean to replace it, move the\n' +
+      'existing files aside by hand first:\n' +
+      '  mv docs/results.json docs/results.holdout.json\n' +
+      '  mv docs/results.md   docs/results.holdout.md\n' +
+      'so the act is deliberate and the old numbers survive.',
+  )
+  process.exit(1)
+}
 
 if (split === 'holdout' && !flag('yes-really-holdout')) {
   console.error(
@@ -171,6 +216,11 @@ try {
   }
 
   const root = resolve(import.meta.dirname, '../../..')
+  if (!write) {
+    console.log('')
+    console.log('dry run: nothing written. docs/results.md, docs/results.json and the')
+    console.log('EvalRun table are untouched. Re-run with --write to record this run.')
+  }
   if (write) {
     await writeFile(resolve(root, 'docs/results.md'), renderMarkdown(results), 'utf8')
     await writeFile(

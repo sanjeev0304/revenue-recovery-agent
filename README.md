@@ -184,8 +184,14 @@ cp .env.example .env  # then fill it in, see below
 npm install
 npm run db:push       # creates the schema and generates the Prisma client
 npm run seed          # 1,500 records, seeded, deterministic
-npm run eval          # baseline, agent, agent LLM-off, majority class
+npm run eval          # dry run: prints the arms, writes nothing
+npm run eval -- --write   # records docs/results.{md,json} and the EvalRun rows
 ```
+
+`npm run eval` does not write by default. It refuses outright to overwrite
+`docs/results.json` when that file records a holdout run, because the holdout was read once
+and cannot be regenerated; no flag overrides that, the existing files have to be moved aside
+by hand. `--no-write` is the explicit form of the default for verification runs.
 
 **Required to reproduce the eval:**
 
