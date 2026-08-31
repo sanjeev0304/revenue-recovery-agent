@@ -179,8 +179,8 @@ export function BoardTable({ initial }: { initial: Board }) {
           </span>
         </div>
         <p className="mt-1 text-xs text-faint">
-          The measured numbers are on the metrics page: all 1100 train records, one pinned
-          reproducible eval run. Nothing here is the submitted figure.
+          The measured numbers are on the metrics page, from one pinned reproducible eval
+          run over the evaluated split. Nothing here is the submitted figure.
         </p>
       </section>
 

@@ -27,7 +27,7 @@ export default async function Page() {
           npm run eval
         </pre>
         <p className="text-xs text-faint">
-          The run scores baseline, agent and majority-class arms over the train split,
+          The run scores baseline, agent and majority-class arms over the split you choose,
           plus a paired LLM on/off comparison, and writes both{' '}
           <span className="num">docs/results.md</span> and{' '}
           <span className="num">docs/results.json</span>.

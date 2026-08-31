@@ -180,11 +180,29 @@ assumption is defensible; assuming it and rewarding it is worth stating.
 ## Reproducibility
 
 ```
+cp .env.example .env  # then fill it in, see below
 npm install
-npm run db:push
+npm run db:push       # creates the schema and generates the Prisma client
 npm run seed          # 1,500 records, seeded, deterministic
 npm run eval          # baseline, agent, agent LLM-off, majority class
 ```
+
+**Required to reproduce the eval:**
+
+- `DATABASE_URL` — Postgres. The dataset lives here and every arm reads it.
+- `GEMINI_API_KEY` — only for `--refresh-llm-cache`. The committed cache in
+  `scripts/eval/llm-cache.json` is replayed by default, so a normal `npm run eval` makes
+  zero API calls. The key must still be set: `scripts/eval` refuses to start without one
+  rather than silently skipping the LLM arm. Any non-empty value works for a cached replay.
+
+**Only needed for the live worker**, not for the eval:
+
+- `REDIS_URL` — BullMQ queues for scheduled retries.
+- `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` / `RAZORPAY_WEBHOOK_SECRET` — the ingest webhook
+  and the Razorpay adapter. Test mode only; the worker refuses to boot on a key that is not
+  `rzp_test_` prefixed.
+
+`npm test` needs none of them — 251 unit tests run with no database and no network.
 
 `npm run eval` writes `docs/results.md` and `docs/results.json`. The metrics screen reads
 that file; no figure in this README was typed by hand.
@@ -201,10 +219,12 @@ The pinned numbers are one draw from a distribution roughly 11 payments wide.
 
 Three screens.
 
-**Recovery board** — live payment state, filterable by status and cause, with a time-warp
-mode that compresses multi-day retry schedules into seconds. Rows flash as they change so a
-full recovery lifecycle is watchable. Its counters are labelled as a demo run and are not
-the measured result.
+**Recovery board** — live payment state, filterable by status and cause, polling every 1.5s.
+Rows flash as they change so a full recovery lifecycle is watchable. The board has no warp
+control of its own: time-warp is configured on the worker at boot via `WARP_ORIGIN` and
+`WARP_FACTOR`, which compress multi-day retry schedules into seconds, and the board simply
+displays the resulting run as it happens. Its counters are labelled as a demo run and are
+not the measured result.
 
 **Payment timeline** — the full decision chain for one payment: raw Razorpay error →
 diagnosis with confidence, classifier and numbered evidence → playbook with its caps →

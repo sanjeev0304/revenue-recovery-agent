@@ -520,14 +520,23 @@ export function Metrics({ results }: { results: EvalResults }) {
             , a gap of{' '}
             <span className="num text-text">{Math.abs(modelGain)}</span>, while the model
             arm itself moved by <span className="num text-text">11 payments</span> between
-            two runs of identical code on identical data. A gap that small inside that much
-            noise is not a result and is not reported as one.
+            two <span className="text-text">train-split</span> runs of identical code on
+            identical data. A gap that small inside that much noise is not a result and is
+            not reported as one.
           </p>
           <p className="mt-2 max-w-4xl text-sm text-faint">
-            The classification gap is the part that holds: 18 to 20 records across three
-            runs, stable, and explained by the split below — the model reads a genuinely
-            opaque decline well and almost never spots a masked one. This is a finding about
-            the classifier on one subset, not about the pipeline.
+            The classification gap is the part that holds:{' '}
+            {opaque !== undefined && (
+              <>
+                <span className="num text-text">
+                  {opaque.majorityCount - opaque.all.correct}
+                </span>{' '}
+                records on this split, and 18 to 20 across three train-split runs —{' '}
+              </>
+            )}
+            stable, and explained by the split below: the model reads a genuinely opaque
+            decline well and almost never spots a masked one. This is a finding about the
+            classifier on one subset, not about the pipeline.
             The headline above stands on the deterministic diagnosis and policy layer:{' '}
             <span className="num text-text">
               {baseline.recovered}/{baseline.processed}
@@ -544,9 +553,13 @@ export function Metrics({ results }: { results: EvalResults }) {
 
         <p className="num mt-3 text-xs text-faint">
           The LLM arm replays a committed cache of model diagnoses, so this run is
-          reproducible; Gemini at temperature 0 is not deterministic and three live runs
-          moved this arm by up to 11 payments. These numbers are one draw from that
-          distribution. LLM hit rate {cmp.llmHitRate.calls}/{cmp.llmHitRate.total} (
+          reproducible; Gemini at temperature 0 is not deterministic and three live runs on
+          the train split moved this arm by up to 11 payments. These numbers are one draw
+          from that distribution. Diagnoses are cached by error signature, so records
+          sharing a signature all receive one answer — masked and genuinely opaque records
+          share signatures by construction, which is why the model cannot separate them and
+          why the figure above is partly a property of the caching strategy rather than of
+          the model. See docs/EVAL-PLAN.md. LLM hit rate {cmp.llmHitRate.calls}/{cmp.llmHitRate.total} (
           {((100 * cmp.llmHitRate.calls) / cmp.llmHitRate.total).toFixed(1)}%) of records
           required a model call. PRD target was under 15%; see docs/EVAL-PLAN.md for why
           that is unreachable alongside a meaningful OPAQUE_BANK_DECLINE metric.

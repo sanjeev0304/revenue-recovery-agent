@@ -34,7 +34,7 @@ export default function RootLayout({
             ))}
           </nav>
           <span className="num ml-auto text-xs text-faint">
-            train split · dataset v1 · test mode
+            dataset v1 · test mode
           </span>
         </header>
         {children}
