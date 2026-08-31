@@ -61,6 +61,11 @@
       "confidence": 0.7,
       "reasoning": "The payment was declined by the gateway during authorization, with no specific reason provided beyond 'payment_declined'. This often points to an issue on the issuer's side that is not transparently communicated."
     },
+    "card|payment_declined|gateway|payment_initiation": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.7,
+      "reasoning": "The gateway declined the payment at the initiation step without a specific reason, indicating the bank declined the transaction. There's no information to suggest other specific causes like insufficient funds or limits."
+    },
     "card|payment_declined|razorpay|payment_authorization": {
       "rootCause": "OPAQUE_BANK_DECLINE",
       "confidence": 0.7,
@@ -116,6 +121,11 @@
       "confidence": 0.7,
       "reasoning": "The payment failed with 'payment_declined' multiple times at the authorization step, suggesting an issue with the bank or customer's account. Without more specific details from the gateway, it's likely an opaque bank decline rather than a specific limit or fund issue."
     },
+    "upi|payment_declined|gateway|payment_initiation": {
+      "rootCause": "OPAQUE_BANK_DECLINE",
+      "confidence": 0.7,
+      "reasoning": "The payment was declined by the gateway during initiation, with no specific reason provided beyond 'payment_declined'. This often points to an issue on the bank's side that is not transparently communicated, making OPAQUE_BANK_DECLINE the most likely cause."
+    },
     "upi|payment_declined|razorpay|payment_authentication": {
       "rootCause": "AUTH_FAILED",
       "confidence": 0,
@@ -150,6 +160,11 @@
       "rootCause": "OPAQUE_BANK_DECLINE",
       "confidence": 0.7,
       "reasoning": "The payment failed at the authorization step with a generic 'payment_failed' reason from the gateway. Given the UPI method and prior failed attempts, it's likely an issue on the bank's side without a specific error code."
+    },
+    "upi|payment_failed|gateway|payment_initiation": {
+      "rootCause": "TRANSACTION_LIMIT_EXCEEDED",
+      "confidence": 0.7,
+      "reasoning": "The payment failed during initiation with UPI for a relatively high amount (5508.77 INR). Given a prior failed attempt with the same generic reason, it's plausible the user hit a daily or per-transaction UPI limit, especially since it's early morning (5 AM) and banks often have lower limits for UPI at odd hours."
     },
     "upi|payment_failed|razorpay|payment_authentication": {
       "rootCause": "AUTH_FAILED",

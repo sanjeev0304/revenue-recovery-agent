@@ -17,6 +17,22 @@ records costs nothing; under-powering the safety-critical class costs credibilit
 The holdout split is frozen. It is not read during development, not used for tuning, and
 not inspected before 3 Sep. The only code that reads it is `scripts/eval`.
 
+### The holdout has been read and is spent
+
+**Read once on 2026-08-31T15:49:20Z**, by `scripts/eval` via
+`npm run eval -- --holdout --yes-really-holdout`, dataset `v1`, 400 records. Results are in
+`docs/results.md` and `docs/results.json`, and four `EvalRun` rows record it.
+
+It is now spent. Nothing was tuned after seeing these numbers, and nothing may be: any
+change to diagnosis, policy, guardrails, playbooks or the generator made from here on
+invalidates this measurement, because the split is no longer held out from the people making
+the change. If such a change becomes necessary, the honest options are to report the holdout
+figure as belonging to the earlier code, or to generate a fresh split under a new dataset
+version and say so.
+
+The train figures elsewhere in this document remain the development numbers and were
+produced before the holdout was opened.
+
 ### Distribution
 
 Modelled to reflect a plausible Indian merchant failure mix. The generator must document
@@ -231,6 +247,34 @@ LLM on that class, and report the hit rate as over target with this reason attac
 If the recovery lift is modest but the wasted-attempt reduction is large, lead with the
 efficiency story rather than inflating the recovery number. That is a real result and an
 honest one.
+
+## A caveat that materially qualifies the LLM result
+
+Found while reporting the holdout run, recorded rather than acted on.
+
+Diagnoses are cached by error signature — `method|reason|source|step` — to stay inside the
+Gemini free tier. On the holdout that collapses **126 opaque records into 29 signatures**,
+and **16 of those signatures span more than one true cause**. One signature,
+`upi|payment_declined|bank|payment_authorization`, covers 25 records spanning nine different
+true causes, and every one of those 25 receives the same cached prediction.
+
+The consequence is structural: within a signature the classifier cannot discriminate at all,
+because it answers once and the answer is reused. The amount, local hour, day of month and
+prior-attempt count that the prompt carries influence only the first record of each
+signature; the remaining 97 of 126 inherit that decision.
+
+This means the reported "LLM loses to majority-class guessing on the opaque subset" is **not
+purely a measurement of model capability**. It is substantially a consequence of the caching
+decision, which was taken for quota reasons and is documented in `docs/DECISIONS.md`. A
+per-record classifier might do better or worse; this eval cannot say, because it never asked
+the model a per-record question.
+
+It also explains the masked-record score of 2/60 more completely than "the model is bad at
+masked causes" does. Masked and genuine records share signatures by construction — that is
+what masking is — so a per-signature answer cannot separate them.
+
+Nothing was changed in response to this. Fixing it means re-running the model per record,
+which is a different experiment on a split that is now spent.
 
 ## Reproducibility
 
